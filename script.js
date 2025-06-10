@@ -3,6 +3,8 @@ let score = 0;
 let autoClicker = 0;
 let clickMultiplier = 1;
 let raveActive = false;
+let nextRaveIn = 30;
+let raveTimeRemaining = 5;
 
 // Get elements
 const scoreDisplay = document.getElementById('score');
@@ -16,13 +18,12 @@ const shopItems = {
   item5: document.getElementById('item5')
 };
 
-// Waltuh image and audio
-const waltuhImage = document.getElementById('waltuh-image');
-const waltuhAudio = document.getElementById('waltuh-audio');
-
-// Rave effect
+// Rave effect elements
 const raveEffect = document.getElementById('rave-effect');
 const rainbowLights = document.getElementById('rainbow-lights');
+const raveTimer = document.getElementById('rave-timer');
+const raveTimeDisplay = document.getElementById('rave-time');
+const nextRaveTimeDisplay = document.getElementById('next-rave-time');
 
 // Update score display
 function updateScore() {
@@ -61,12 +62,28 @@ shopItems.item1.addEventListener('click', function() {
 
 // Rave function (trigger every 30 seconds)
 setInterval(function() {
-  if (!raveActive) {
+  if (!raveActive && nextRaveIn <= 0) {
     raveActive = true;
     raveEffect.style.display = 'flex';
-    setTimeout(function() {
-      raveEffect.style.display = 'none';
-      raveActive = false;
-    }, 10000); // Last for 10 seconds
+    rainbowLights.style.display = 'block';
+
+    // Rave countdown
+    let raveCountdown = setInterval(function() {
+      raveTimeDisplay.textContent = raveTimeRemaining;
+      raveTimeRemaining--;
+      if (raveTimeRemaining < 0) {
+        clearInterval(raveCountdown);
+        raveEffect.style.display = 'none';
+        rainbowLights.style.display = 'none';
+        raveActive = false;
+        raveTimeRemaining = 5; // Reset rave time
+        nextRaveIn = 30; // Reset the countdown for next rave
+      }
+    }, 1000);
+
   }
-}, 30000); // Every 30 seconds
+  // Update next rave timer
+  nextRaveTimeDisplay.textContent = nextRaveIn;
+  nextRaveIn--;
+
+}, 1000); // Update timer every second
