@@ -1,0 +1,549 @@
+<html>
+<head>
+    <title>3D Character Movement</title>
+    <!-- Add CSP meta tag -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https:; font-src 'self' https:; connect-src 'self' wss: https:;">
+    
+    <!-- Block console access -->
+    <script>
+        // Disable console
+        (function() {
+            try {
+                Object.defineProperty(window, 'console', {
+                    value: {},
+                    writable: false,
+                    configurable: false
+                });
+                
+                // Also block common console methods
+                ['log', 'info', 'warn', 'error', 'debug'].forEach(function(method) {
+                    window.console[method] = function() {};
+                });
+                
+                // Block debug tools
+                setInterval(function() {
+                    const devtools = /./;
+                    devtools.toString = function() {
+                        this.opened = true;
+                    }
+                    console.log(devtools);
+                    if (devtools.opened) {
+                        document.body.innerHTML = '';
+                        alert('Developer tools are not allowed on this page');
+                        window.location.reload();
+                    }
+                }, 1000);
+            } catch(e) {}
+        })();
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body { margin: 0; overflow: hidden; } 
+        canvas { display: block; }
+
+        #control-panel {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 20;
+            display: none; 
+            font-family: sans-serif;
+            font-size: 12px;
+            max-height: calc(100vh - 20px); /* Prevent overflow */
+            overflow-y: auto; /* Add scroll if needed */
+        }
+
+        #control-panel label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        #control-panel input[type="range"] {
+            vertical-align: middle;
+            width: 150px; /* Adjust slider width */
+            margin-left: 5px;
+        }
+
+        #control-panel h3, #control-panel h4 {
+            margin-top: 0;
+            margin-bottom: 8px;
+            font-size: 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            padding-bottom: 4px;
+        }
+        #control-panel h4 {
+             font-size: 13px;
+             margin-top: 10px;
+        }
+
+        #item-transform-controls, #arm-rotation-controls {
+            margin-bottom: 15px;
+        }
+
+        /* Added specific styles for chat settings panel */
+        .chat-settings-toggle {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            z-index: 1001; /* Above settings panel */
+        }
+
+        .chat-settings-panel {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            box-sizing: border-box;
+            color: white;
+            font-family: 'Source Sans Pro', sans-serif;
+            font-size: 14px;
+            overflow-y: auto;
+            display: none; /* Hidden by default */
+        }
+
+        .chat-settings-panel label {
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .chat-settings-panel input[type="range"],
+        .chat-settings-panel input[type="color"],
+        .chat-settings-panel input[type="text"] {
+            margin-left: 5px;
+            vertical-align: middle;
+        }
+        
+        .chat-settings-panel input[type="text"] {
+            width: 100px; /* Adjust width as needed */
+            padding: 2px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+        }
+
+        .settings-group {
+            margin-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            padding-bottom: 10px;
+        }
+        
+        .settings-group:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .chat-settings-panel h4 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 15px;
+        }
+        
+        .settings-save-area {
+            margin-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            padding-top: 10px;
+        }
+        
+        #settings-string-output {
+            width: 100%;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 12px;
+            padding: 5px;
+            box-sizing: border-box;
+            resize: none;
+            margin-top: 5px;
+        }
+        
+        #generate-settings-string {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 3px;
+            margin-top: 5px;
+        }
+
+        #generate-settings-string:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Add these new styles for nametags */
+        .nametag {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Source Sans Pro', sans-serif;
+            font-size: 14px;
+            pointer-events: none;
+            white-space: nowrap;
+            text-align: center;
+            transform: translate(-50%, -50%);
+        }
+
+        .admin-panel {
+            position: fixed;
+            top: 50px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 8px;
+            color: white;
+            z-index: 1000;
+            width: 250px;
+            font-family: 'Source Sans Pro', sans-serif;
+            max-height: calc(100vh - 100px); /* Limit height */
+            overflow-y: auto; /* Enable vertical scrolling */
+        }
+
+        .admin-panel-handle {
+            cursor: move;
+        }
+
+        .admin-panel-title {
+            margin: 0;
+            color: #ff0000;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .control-group input[type="range"] {
+            width: 100%;
+        }
+
+        .control-group select {
+            width: 100%;
+            margin-bottom: 5px;
+            padding: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+        }
+
+        #kick-button {
+            width: 100%;
+            padding: 5px;
+            background: #ff0000;
+            border: none;
+            color: white;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        #kick-button:hover {
+            background: #cc0000;
+        }
+
+        .mobile-controls {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 200px;
+            z-index: 1000;
+            touch-action: none;
+        }
+
+        #joystick-area {
+            position: absolute;
+            left: 40px;
+            bottom: 40px;
+            width: 120px;
+            height: 120px;
+        }
+
+        #joystick {
+            position: absolute;
+            width: 120px;
+            height: 120px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #joystick-head {
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+        }
+
+        .mobile-jump {
+            position: absolute;
+            right: 40px;
+            bottom: 40px;
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 16px;
+            touch-action: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="chat-container" class="chat-container">
+        <button class="chat-settings-toggle" id="chat-settings-toggle">⚙️</button>
+        <div id="chat-messages" class="chat-messages"></div>
+        <input type="text" id="chat-input" class="chat-input" placeholder="Press Enter to chat..." maxlength="200">
+
+        <!-- Chat Settings Panel -->
+        <div id="chat-settings-panel" class="chat-settings-panel">
+            <h4>Chat Settings</h4>
+            <div class="settings-group">
+                <h4>General</h4>
+                <label>Width (px): <input type="range" min="200" max="600" step="1" value="300" data-setting="containerWidth"></label><br>
+                <label>Height (px): <input type="range" min="100" max="400" step="1" value="200" data-setting="messagesHeight"></label><br>
+                <label>Pos Top (px): <input type="range" min="0" max="500" step="1" value="10" data-setting="containerTop"></label><br>
+                <label>Pos Left (px): <input type="range" min="0" max="500" step="1" value="10" data-setting="containerLeft"></label><br>
+                <label>Background Color: <input type="color" value="#000000" data-setting="containerBgColor"></label> (Transparency: <input type="range" min="0" max="1" step="0.01" value="0.7" data-setting="containerBgOpacity">)<br>
+                <label>Border Color: <input type="color" value="#ffffff" data-setting="containerBorderColor"></label> (Transparency: <input type="range" min="0" max="1" step="0.01" value="0.2" data-setting="containerBorderOpacity">)<br>
+                <label>Border Radius (px): <input type="range" min="0" max="20" step="1" value="8" data-setting="containerBorderRadius"></label><br>
+            </div>
+             <div class="settings-group">
+                <h4>Text</h4>
+                <label>Font Family: <input type="text" value="'Source Sans Pro', sans-serif" data-setting="fontFamily"></label><br>
+                <label>Text Size (px): <input type="range" min="10" max="24" step="1" value="14" data-setting="textSize"></label><br>
+                <label>Message Color: <input type="color" value="#ffffff" data-setting="textColor"></label><br>
+                <label>Username Color: <input type="color" value="#4CAF50" data-setting="usernameColor"></label><br>
+                <label>System Message Color: <input type="color" value="#FFA500" data-setting="systemTextColor"></label><br>
+                <label>Help Message Color: <input type="color" value="#87CEEB" data-setting="helpTextColor"></label><br>
+            </div>
+             <div class="settings-group">
+                <h4>Input Box</h4>
+                <label>Height (px): <input type="range" min="20" max="60" step="1" value="8" data-setting="inputPadding"></label><br> (Using padding for height effect)<br>
+                <label>Background Color: <input type="color" value="#ffffff" data-setting="inputBgColor"></label> (Transparency: <input type="range" min="0" max="1" step="0.01" value="0.1" data-setting="inputBgOpacity">)<br>
+                <label>Border Color: <input type="color" value="#ffffff" data-setting="inputBorderColor"></label> (Transparency: <input type="range" min="0" max="1" step="0.01" value="0.3" data-setting="inputBorderOpacity">)<br>
+                 <label>Border Radius (px): <input type="range" min="0" max="10" step="1" value="3" data-setting="inputBorderRadius"></label><br>
+                 <label>Text Color: <input type="color" value="#ffffff" data-setting="inputText color"></label> (Transparency: <input type="range" min="0" max="1" step="0.01" value="0" data-setting="inputTextOpacity">)
+            </div>
+            
+            <div class="settings-save-area">
+                <button id="generate-settings-string">Generate Settings String</button>
+                <textarea id="settings-string-output" readonly placeholder="Settings string will appear here..."></textarea>
+            </div>
+        </div>
+
+    </div>
+    <div id="admin-panel" style="display: none;" class="admin-panel">
+        <div class="admin-panel-handle">
+            <h3 class="admin-panel-title">Admin Panel</h3>
+        </div>
+        <div class="admin-controls">
+            <div class="control-group">
+                <label>Character Scale</label>
+                <input type="range" id="character-scale" min="0.5" max="3" step="0.1" value="1">
+            </div>
+            <div class="control-group">
+                <label>Torso Scale</label>
+                <input type="range" id="torso-scale" min="0.5" max="3" step="0.1" value="1">
+            </div>
+            
+            <!-- New controls -->
+            <div class="control-group">
+                <h4>Monster Mode</h4>
+                <button id="toggle-monster" class="admin-button">Toggle Monster Mode</button>
+                <div id="monster-controls" style="display: none;">
+                    <label>Scale: <input type="range" id="monster-scale" min="1" max="5" step="0.1" value="2"></label><br>
+                    <label>Color: <input type="color" id="monster-color" value="#ff0000"></label><br>
+                    <label>Glow: <input type="range" id="monster-glow" min="0" max="1" step="0.1" value="0.5"></label>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h4>System Messages</h4>
+                <div class="system-message-controls">
+                    <input type="text" id="system-message" placeholder="Enter system message...">
+                    <button id="send-system-message" class="admin-button">Send System Message</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h4>Fly Mode</h4>
+                <button id="toggle-fly" class="admin-button">Toggle Fly Mode</button>
+                <div id="fly-controls" style="display: none;">
+                    <label>Fly Speed
+                        <input type="range" id="fly-speed" min="1" max="50" step="1" value="10">
+                    </label>
+                    <label>Vertical Speed
+                        <input type="range" id="vertical-speed" min="1" max="50" step="1" value="10">
+                    </label>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h4>Color Customization</h4>
+                <label>Torso Color: <input type="color" id="torso-color" value="#ff0000"></label>
+                <label>Arms Color: <input type="color" id="arms-color" value="#f4cc43"></label>
+                <label>Legs Color: <input type="color" id="legs-color" value="#a5bc50"></label>
+                <label>Head Color: <input type="color" id="head-color" value="#ffffff"></label>
+            </div>
+
+            <!-- Add new music controls section -->
+            <div class="control-group">
+                <h4>Music Settings</h4>
+                <label>Music Volume:
+                    <input type="range" id="music-volume" min="0" max="1" step="0.1" value="0.5">
+                </label>
+                <button id="toggle-music">Toggle Music</button>
+            </div>
+
+            <div class="control-group">
+                <h4>Settings Colors</h4>
+                <label>Settings Panel BG: <input type="color" id="settings-bg-color" value="#000000"></label>
+                <label>Settings Text: <input type="color" id="settings-text-color" value="#ffffff"></label>
+            </div>
+            
+            <div class="control-group">
+                <h4>Chat Customization</h4>
+                <label>Chat Color: <input type="color" id="chat-color" value="#ffffff"></label>
+                <label>Chat Glow:</label>
+                <select id="chat-glow">
+                    <option value="none">None</option>
+                    <option value="red">Red</option>
+                    <option value="blue">Blue</option>
+                    <option value="green">Green</option>
+                    <option value="rainbow">Rainbow</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <h4>Special Effects</h4>
+                <label>Particle Trail</label>
+                <select id="particle-effect">
+                    <option value="none">None</option>
+                    <option value="sparkles">Sparkles</option>
+                    <option value="fire">Fire</option>
+                    <option value="rainbow">Rainbow</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <h4>Kick Player</h4>
+                <select id="kick-player">
+                    <option value="">Select Player</option>
+                </select>
+                <button id="kick-button" class="admin-button">Kick</button>
+            </div>
+        </div>
+    </div>
+    <div id="music-controls" style="position: fixed; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); padding: 10px; border-radius: 5px; z-index: 1000; display: flex; gap: 10px; align-items: center;">
+        <button id="global-toggle-music" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 5px 10px; border-radius: 3px; cursor: pointer;">Toggle Music</button>
+        <input type="range" id="global-music-volume" min="0" max="1" step="0.1" value="0.5" style="width: 100px;">
+    </div>
+    <div id="mobile-controls" class="mobile-controls" style="display: none;">
+        <div id="joystick-area">
+            <div id="joystick">
+                <div id="joystick-head"></div>
+            </div>
+        </div>
+        <button id="mobile-jump" class="mobile-jump">Jump</button>
+    </div>
+    <div id="control-panel">
+        <h3>Equipped Item Controls</h3>
+        <div id="item-transform-controls">
+            <h4>Item Transform (Adjustment)</h4>
+            <label>Pos X: <input type="range" min="-1" max="1" step="0.001" value="0" data-param="itemPosX"></label><br>
+            <label>Pos Y: <input type="range" min="-1" max="1" step="0.001" value="0" data-param="itemPosY"></label><br>
+            <label>Pos Z: <input type="range" min="-1" max="1" step="0.001" value="0" data-param="itemPosZ"></label><br>
+            <label>Rot X (deg): <input type="range" min="-180" max="180" step="1" value="0" data-param="itemRotX"></label><br>
+            <label>Rot Y (deg): <input type="range" min="-180" max="180" step="1" value="0" data-param="itemRotY"></label><br>
+            <label>Rot Z (deg): <input type="range" min="-180" max="180" step="1" value="0" data-param="itemRotZ"></label><br>
+            <label>Scale: <input type="range" min="0.1" max="5.0" step="0.01" value="1" data-param="itemScale"></label><br>
+        </div>
+        <div id="arm-rotation-controls">
+            <h4>Holding Arm Rotation (Adjustment)</h4>
+            <label>Rot X (deg): <input type="range" min="-180" max="180" step="1" value="0" data-param="armRotX"></label><br>
+        </div>
+    </div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+    <script type="module" src="game.js"></script>
+    <script>
+        // Make admin panel draggable
+        const adminPanel = document.getElementById('admin-panel');
+        const adminPanelHandle = document.querySelector('.admin-panel-handle');
+        
+        let isDragging = false;
+        let currentX;
+        let currentY;
+        let initialX;
+        let initialY;
+        let xOffset = 0;
+        let yOffset = 0;
+
+        adminPanelHandle.addEventListener('mousedown', dragStart);
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('mouseup', dragEnd);
+
+        function dragStart(e) {
+            initialX = e.clientX - xOffset;
+            initialY = e.clientY - yOffset;
+
+            if (e.target === adminPanelHandle || e.target.parentNode === adminPanelHandle) {
+                isDragging = true;
+            }
+        }
+
+        function drag(e) {
+            if (isDragging) {
+                e.preventDefault();
+                
+                currentX = e.clientX - initialX;
+                currentY = e.clientY - initialY;
+
+                xOffset = currentX;
+                yOffset = currentY;
+
+                setTranslate(currentX, currentY, adminPanel);
+            }
+        }
+
+        function setTranslate(xPos, yPos, el) {
+            el.style.transform = `translate(${xPos}px, ${yPos}px)`;
+        }
+
+        function dragEnd() {
+            initialX = currentX;
+            initialY = currentY;
+            isDragging = false;
+        }
+    </script>
+</body>
+</html>
