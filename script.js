@@ -265,14 +265,14 @@ document.addEventListener('DOMContentLoaded', () => {
             
             renderStore();
             updateDisplay();
-            alert("Your previous session of DOOM has been restored!");
+            alert("progress restored");
         } else {
-            alert("No saved game found, you incompetent human!");
+            alert("no progress found");
         }
     }
     
     function resetGame() {
-        if (confirm("Are you sure you want to erase all your hard-earned DOOM? This cannot be undone!")) {
+        if (confirm("btw this resets everything")) {
             localStorage.removeItem('zimClickerSave');
             window.location.reload();
         }
@@ -407,18 +407,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function checkWin(results) {
         let winAmount = 0;
-        let winMessage = "No luck, pathetic human!";
+        let winMessage = "do it again";
 
         if (results[0].icon === results[1].icon && results[1].icon === results[2].icon) {
             // Three of a kind
             winAmount = spinCost * results[0].payout;
-            winMessage = `TRIPLE DOOM! You win ${formatNumber(winAmount)}!`;
+            winMessage = `lets goooo ${formatNumber(winAmount)}!`;
             playSound('slots_win.mp3');
         } else if (results[0].icon === results[1].icon || results[1].icon === results[2].icon) {
             // Two of a kind (adjacent)
             const matchedSymbol = results[0].icon === results[1].icon ? results[0] : results[1];
             winAmount = spinCost * (matchedSymbol.payout / 4);
-            winMessage = `A pitiful match! You win ${formatNumber(Math.floor(winAmount))}!`;
+            winMessage = `nice, u got ${formatNumber(Math.floor(winAmount))}!`;
         }
         
         if (winAmount > 0) {
