@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daily Countdown</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap');
+    @font-face {
+      font-family: 'Digital-7';
+      src: url('digital-7.ttf') format('truetype');
+    }
+
+    body {
+      margin: 0;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background: #0d0d0d;
+      color: #fff;
+      font-family: 'Digital-7', sans-serif;
+      animation: fadeIn 2s ease-in-out;
+      position: relative;
+    }
+
+    .countdown-timer {
+      font-family: 'Digital-7', sans-serif !important;
+      font-size: 4rem;
+    }
+
+    body::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 115%;
+      height: 100%;
+      background: radial-gradient(circle, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.9) 100%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    #smoke {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 110%;
+      pointer-events: none;
+      background: radial-gradient(circle, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.8) 50%), url('Entrance.png');
+      background-size: 100%;
+      background-position: center;
+      mix-blend-mode: lighten;
+      opacity: 0.9;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+<div id="smoke"></div>
+<a href="https://logwork.com/countdown-timer" class="countdown-timer" data-style="circles" data-timezone="Europe/London" data-textcolor="#ff4242" data-date="2025-04-23 08:53" data-background="#eb4646" data-digitscolor="#f5f5f5" data-unitscolor="#f2f2f2">Countdown Timer</a>
+<script src="https://cdn.logwork.com/widget/countdown.js"></script>
+</body>
+</html>
