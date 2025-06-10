@@ -1,0 +1,234 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Battle Anyone: The Game</title>
+    <link rel="stylesheet" href="B_styles.css">
+    <script type="importmap">
+    {
+        "imports": {
+            "vue": "https://unpkg.com/vue@3/dist/vue.esm-browser.js"
+        }
+    }
+    </script>
+</head>
+<body>
+    <div id="app" @click="initAudio">
+        <div class="container">
+            <header>
+                <h1>Battle Anyone: The Game</h1>
+            </header>
+            
+            <div v-if="gameState === 'setup'" class="setup-screen">
+                <h2>Create Your Enemy</h2>
+                <div class="upload-container">
+                    <label for="enemy-image" class="upload-button">
+                        <span v-if="!enemyImage">Upload Enemy Sprite</span>
+                        <span v-else>Change Enemy Sprite</span>
+                    </label>
+                    <input type="file" id="enemy-image" accept="image/*" @change="handleImageUpload" class="hidden">
+                    
+                    <div v-if="enemyImage" class="preview">
+                        <img :src="enemyImage" alt="Enemy Preview" class="enemy-preview">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="enemy-name">Enemy Name:</label>
+                    <input type="text" id="enemy-name" v-model="enemyName" placeholder="Enter enemy name">
+                </div>
+                
+                <div class="form-group">
+                    <label for="enemy-personality">Enemy Personality:</label>
+                    <textarea id="enemy-personality" v-model="enemyPersonality" placeholder="Describe your enemy's personality, backstory, motivations..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="enemy-health">
+                        Enemy Health (Optional): 
+                        <span class="small-text">Leave blank for AI to determine</span>
+                    </label>
+                    <input type="number" id="enemy-health" v-model="enemyHealth" placeholder="Enter health amount">
+                </div>
+                
+                <div class="form-group">
+                    <label for="player-health">
+                        Player Health: 
+                        <span class="small-text">Default: 100</span>
+                    </label>
+                    <input type="number" id="player-health" v-model="playerHealth" placeholder="Enter health amount">
+                </div>
+
+                <div class="form-group">
+                    <label for="battle-music">
+                        Custom Battle Music (Optional):
+                        <span class="small-text">Leave blank to use default theme</span>
+                    </label>
+                    <input type="file" id="battle-music" accept="audio/*" @change="handleMusicUpload" class="hidden">
+                    <div class="upload-container">
+                        <label for="battle-music" class="upload-button">
+                            <span v-if="!customBattleMusic">Upload Battle Theme</span>
+                            <span v-else>Change Battle Theme</span>
+                        </label>
+                        
+                        <div v-if="customBattleMusic" class="music-preview">
+                            Custom battle music loaded: {{ customBattleMusic.name }}
+                            <button @click="clearCustomMusic" class="delete-item-button">✕</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setup-item-list">
+                    <h3>Create Custom Item:</h3>
+                    <div class="custom-item-form">
+                        <div class="form-group">
+                            <label for="custom-item-name">Item Name (max 15 chars, no spaces for AI):</label>
+                            <input type="text" id="custom-item-name" v-model="customItemName" placeholder="Enter item name">
+                        </div>
+                        
+                        <div class="item-type-selector">
+                            <button 
+                                @click="customItemType = 'heal'" 
+                                class="item-type-button"
+                                :style="{ color: customItemType === 'heal' ? '#ffff00' : 'white' }">
+                                Healing
+                            </button>
+                            <button 
+                                @click="customItemType = 'defense'" 
+                                class="item-type-button"
+                                :style="{ color: customItemType === 'defense' ? '#ffff00' : 'white' }">
+                                Defense
+                            </button>
+                            <button 
+                                @click="customItemType = 'attack'" 
+                                class="item-type-button"
+                                :style="{ color: customItemType === 'attack' ? '#ffff00' : 'white' }">
+                                Attack
+                            </button>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="custom-item-value">Item Value:</label>
+                            <input type="number" id="custom-item-value" v-model="customItemValue" min="1" max="30">
+                        </div>
+                        
+                        <button 
+                            @click="createCustomItem" 
+                            class="item-submit-button"
+                            :disabled="isCreatingItem">
+                            {{ isCreatingItem ? 'Creating...' : 'Create Item' }}
+                        </button>
+                        
+                        <div v-if="itemCreationError" class="error-message">{{ itemCreationError }}</div>
+                    </div>
+                </div>
+                
+                <div class="current-inventory">
+                    <h3>Your Inventory:</h3>
+                    <div class="item-grid" v-if="player.inventory.length > 0">
+                        <div v-for="(item, index) in player.inventory" :key="item.id" class="inventory-item">
+                            <div class="inventory-item-content">
+                                {{ item.name }}
+                                <div class="item-description">{{ item.description }}</div>
+                            </div>
+                            <button @click="deleteItem(index)" class="delete-item-button">✕</button>
+                        </div>
+                    </div>
+                    <div v-else class="no-items-message">
+                        No items in inventory. Create some items above!
+                    </div>
+                </div>
+                
+                <button @click="startBattle" :disabled="!canStartBattle" class="start-button">
+                    Start Battle
+                </button>
+                <div v-if="setupError" class="error-message">{{ setupError }}</div>
+                <div v-if="isLoading" class="loading">
+                    <div class="spinner"></div>
+                    <p>{{ loadingMessage }}</p>
+                </div>
+            </div>
+            
+            <div v-if="gameState === 'battle'" class="battle-screen">
+                <div class="battle-ui">
+                    <div class="enemy-container">
+                        <div class="enemy-stats">
+                            <div class="name-health">
+                                <h3>{{ enemy.name }}</h3>
+                                <div class="health-bar">
+                                    <div class="health-fill" :style="{ width: (enemy.currentHealth / enemy.maxHealth) * 100 + '%' }"></div>
+                                </div>
+                                <div class="health-text">{{ enemy.currentHealth }} / {{ enemy.maxHealth }}</div>
+                            </div>
+                        </div>
+                        <div class="enemy-sprite" :class="{ 'enemy-hit': showEnemyHit }">
+                            <img :src="enemyImage" alt="Enemy">
+                        </div>
+                    </div>
+                    
+                    <div class="player-container">
+                        <div class="player-stats">
+                            <div class="name-health">
+                                <h3>{{ player.name }}</h3>
+                                <div class="health-bar">
+                                    <div class="health-fill" :style="{ width: (player.currentHealth / player.maxHealth) * 100 + '%' }"></div>
+                                </div>
+                                <div class="health-text">{{ player.currentHealth }} / {{ player.maxHealth }}</div>
+                            </div>
+                        </div>
+                        <div class="player-sprite" :class="{ 'player-hit': showPlayerHit }">
+                            <img v-if="player.avatar" :src="player.avatar" alt="Player" style="max-height: 100%; max-width: 100%; object-fit: contain;">
+                            <svg v-else viewBox="0 0 100 100" width="100" height="100">
+                                <path d="M50 20 L70 50 L50 80 L30 50 Z" fill="#ff0000" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="dialogue-box" ref="dialogueBox" v-show="currentDialogue || battleEnd || isTyping">
+                    <p v-if="currentDialogue" :class="{ 'typing': isTyping }">{{ displayedText }}</p>
+                    <p v-else class="empty-dialogue">&nbsp;</p>
+                </div>
+                
+                <div class="battle-controls" v-if="!isTyping && !currentDialogue && !battleEnd && !isProcessing">
+                    <button @click="toggleAttackOptions" class="attack-button">Fight</button>
+                    <button @click="toggleInventory" class="item-button">Items</button>
+                </div>
+                
+                <div class="attack-options" v-if="showAttackOptions && !battleEnd && !isProcessing">
+                    <button @click="useAttack('quick')" class="attack-button">Quick Attack</button>
+                    <button @click="useAttack('heavy')" class="attack-button">Heavy Attack</button>
+                    <button @click="useAttack('special')" class="attack-button">Special Move</button>
+                    <button @click="useAttack('defend')" class="attack-button">Defend</button>
+                </div>
+                
+                <div class="inventory-menu" v-if="showInventory && !battleEnd && !isProcessing">
+                    <button 
+                        v-for="(item, index) in player.inventory" 
+                        :key="index" 
+                        @click="useItem(item, index)" 
+                        class="inventory-item">
+                        {{ item.name }}
+                    </button>
+                    <div v-if="player.inventory.length === 0" style="grid-column: span 2; text-align: center; padding: 10px; color: #ccc;">
+                        No items in inventory
+                    </div>
+                </div>
+                
+                <div v-if="battleEnd" class="battle-end">
+                    <h2 v-if="battleEnd === 'victory'">Victory!</h2>
+                    <h2 v-else-if="battleEnd === 'defeat'">Defeat...</h2>
+                    <button @click="resetGame" class="reset-button">Play Again</button>
+                </div>
+                <button v-if="!battleEnd" @click="resetGame" class="exit-battle-button">Exit Battle</button>
+            </div>
+            
+            <footer class="credits">
+                <p>Game and Music by Toby Fox (Deltarune)</p>
+                <p>Font by Viika (<a href="https://fontstruct.com/fontstructions/show/2008226/undertale-deltarune-text-font-extended" target="_blank">Undertale-Deltarune Text Font</a>)</p>
+            </footer>
+        </div>
+    </div>
+    <script type="module" src="app.js"></script>
+</body>
+</html>

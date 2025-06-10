@@ -1,0 +1,717 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+@font-face {
+    font-family: 'UndertaleDeltarune';
+    src: url('/undertale-deltarune-text-font-extended.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+body {
+    font-family: 'UndertaleDeltarune', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-image: url('/175637.gif');
+    background-repeat: repeat;
+    background-size: 20% auto; 
+    color: #f0f0f0;
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+header h1 {
+    color: white;
+    text-shadow: 2px 2px 0 #000;
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+}
+
+.hidden {
+    display: none;
+}
+
+/* Setup Screen */
+.setup-screen {
+    background-color: #000;
+    padding: 25px;
+    border-radius: 0;
+    border: 4px solid white;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.setup-screen h2 {
+    text-align: center;
+    color: white;
+    margin-bottom: 20px;
+}
+
+.upload-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 20px;
+    min-height: 150px;
+}
+
+.upload-button, .upload-music-label {
+    background-color: transparent;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    display: inline-block;
+    margin-bottom: 15px;
+    font-family: 'UndertaleDeltarune', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.upload-button:before, .upload-music-label:before {
+    content: "";
+    margin-right: 10px;
+    display: inline-block;
+    width: 14px;
+    height: 12px;
+    background-image: url('/2025_03_11_0wn_Kleki.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    visibility: hidden;
+}
+
+.upload-button:hover, .upload-music-label:hover {
+    background-color: transparent;
+    color: #ffff00;
+}
+
+.upload-button:hover:before, .upload-music-label:hover:before {
+    visibility: visible;
+}
+
+.music-preview {
+    color: #ffff00;
+    margin-bottom: 15px;
+    font-style: italic;
+}
+
+.preview {
+    width: 150px;
+    height: 150px;
+    border: 2px solid white;
+    border-radius: 0;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #000;
+}
+
+.enemy-preview {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    color: white;
+}
+
+.small-text {
+    font-size: 0.8rem;
+    opacity: 0.7;
+}
+
+input[type="text"],
+input[type="number"],
+textarea,
+button {
+    width: 100%;
+    padding: 10px;
+    background-color: #000;
+    border: 2px solid white;
+    border-radius: 0;
+    color: white;
+    font-size: 1rem;
+    font-family: 'UndertaleDeltarune', sans-serif;
+}
+
+textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+.start-button {
+    background-color: transparent;
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    display: block;
+    margin: 20px auto 0;
+}
+
+.start-button:before {
+    content: "";
+    margin-right: 10px;
+    display: inline-block;
+    width: 14px;
+    height: 12px;
+    background-image: url('/2025_03_11_0wn_Kleki.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    visibility: hidden;
+}
+
+.start-button:hover:not(:disabled) {
+    background-color: transparent;
+    color: #ffff00;
+}
+
+.start-button:hover:not(:disabled):before {
+    visibility: visible;
+}
+
+.start-button:disabled {
+    background-color: transparent;
+    border: none;
+    color: #777;
+    cursor: not-allowed;
+}
+
+.start-button:disabled:before {
+    color: #777;
+}
+
+.error-message {
+    color: #ff6b6b;
+    margin-top: 10px;
+    text-align: center;
+}
+
+.loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 20px;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: #4ecdc4;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Battle Screen */
+.battle-screen {
+    background-color: #000;
+    padding: 20px;
+    border-radius: 0;
+    border: 4px solid white;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    min-height: 500px;
+    display: flex;
+    flex-direction: column;
+}
+
+.battle-ui {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    height: 250px;
+}
+
+.enemy-container, .player-container {
+    width: 45%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.enemy-stats, .player-stats {
+    width: 100%;
+    margin-bottom: 10px;
+    background-color: #000;
+}
+
+.name-health {
+    text-align: center;
+}
+
+.name-health h3 {
+    margin-bottom: 5px;
+    color: white;
+    font-size: 1.2rem;
+    text-shadow: 1px 1px 0 #000;
+}
+
+.health-bar {
+    height: 15px;
+    background-color: #000;
+    border: 2px solid white;
+    border-radius: 0;
+    overflow: hidden;
+    margin-bottom: 5px;
+}
+
+.health-fill {
+    height: 100%;
+    background-color: #ffff00;
+    transition: width 0.5s;
+}
+
+.health-text {
+    font-size: 0.9rem;
+    color: white;
+}
+
+.enemy-sprite, .player-sprite {
+    height: 150px;
+    width: 150px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: transform 0.3s;
+}
+
+.enemy-hit {
+    animation: hit 0.5s;
+}
+
+.player-hit {
+    animation: hit 0.5s;
+}
+
+@keyframes hit {
+    0% { transform: translateX(0); filter: brightness(1); }
+    25% { transform: translateX(-10px); filter: brightness(3); }
+    50% { transform: translateX(10px); filter: brightness(3); }
+    75% { transform: translateX(-5px); filter: brightness(2); }
+    100% { transform: translateX(0); filter: brightness(1); }
+}
+
+.enemy-sprite img {
+    max-height: 100%;
+    max-width: 100%;
+    object-fit: contain;
+}
+
+.dialogue-box {
+    background-color: #000;
+    color: white;
+    padding: 15px 25px;
+    border: 4px solid white;
+    border-radius: 0;
+    margin-bottom: 20px;
+    min-height: 100px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+}
+
+.dialogue-box.hidden {
+    display: none;
+}
+
+.dialogue-box p {
+    margin-bottom: 10px;
+    line-height: 1.5;
+    font-size: 1.1rem;
+}
+
+.typing::after {
+    content: '|';
+    animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+
+.dialogue-controls {
+    display: none;
+}
+
+.dialogue-next {
+    display: none;
+}
+
+.battle-controls {
+    display: flex;
+    gap: 15px;
+    padding: 15px;
+    background-color: #000;
+    border: 4px solid white;
+}
+
+.attack-button, .item-button {
+    flex: 1;
+    background-color: transparent;
+    color: white;
+    border: none;
+    padding: 12px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'UndertaleDeltarune', sans-serif;
+}
+
+.attack-button:before, .item-button:before {
+    content: "";
+    margin-right: 10px;
+    display: inline-block;
+    width: 14px;
+    height: 12px;
+    background-image: url('/2025_03_11_0wn_Kleki.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    visibility: hidden;
+}
+
+.attack-button:hover, .item-button:hover {
+    background-color: transparent;
+    color: #ffff00;
+}
+
+.attack-button:hover:before, .item-button:hover:before {
+    visibility: visible;
+}
+
+.inventory-item {
+    position: relative;
+    padding-left: 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  border: none !important;
+}
+
+.inventory-item-content {
+    flex: 1;
+}
+
+.inventory-item:before {
+    content: "";
+    margin-right: 10px;
+    display: inline-block;
+    width: 14px;
+    height: 12px;
+    background-image: url('/2025_03_11_0wn_Kleki.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    visibility: hidden;
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.inventory-item {
+    position: relative;
+    padding-left: 30px;
+}
+
+.inventory-item:hover {
+    color: #ffff00;
+}
+
+.inventory-item:hover:before {
+    visibility: visible;
+}
+
+.attack-options, .inventory-menu {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 15px;
+    background-color: #000;
+    border: 4px solid white;
+    margin-top: 10px;
+}
+
+.exit-battle-button {
+    background-color: transparent;
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    display: block;
+    margin: 10px auto;
+    font-family: 'UndertaleDeltarune', sans-serif;
+}
+
+.exit-battle-button:before {
+    content: "";
+    margin-right: 10px;
+    display: inline-block;
+    width: 14px;
+    height: 12px;
+    background-image: url('/2025_03_11_0wn_Kleki.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    visibility: hidden;
+}
+
+.exit-battle-button:hover {
+    background-color: transparent;
+    color: #ffff00;
+}
+
+.exit-battle-button:hover:before {
+    visibility: visible;
+}
+
+.item-description {
+    font-size: 0.8rem;
+    color: #ccc;
+    margin-top: 4px;
+}
+
+.delete-item-button {
+    margin-left: 5px;
+    background-color: transparent;
+    border: none;
+    color: #ff6b6b;
+    cursor: pointer;
+    font-size: 0.8rem;
+    padding: 2px 5px;
+}
+
+.delete-item-button:hover {
+    color: #ff0000;
+}
+
+.setup-item-list {
+    margin-top: 20px;
+    border: 2px solid white;
+    padding: 10px;
+}
+
+.setup-item-list h3 {
+    margin-bottom: 10px;
+    color: white;
+}
+
+.item-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+}
+
+.setup-item {
+    background-color: transparent;
+    color: white;
+    border: none;
+    padding: 10px;
+    cursor: pointer;
+    text-align: center;
+    font-family: 'UndertaleDeltarune', sans-serif;
+}
+
+.setup-item:before {
+    content: "";
+    margin-right: 10px;
+    display: inline-block;
+    width: 14px;
+    height: 12px;
+    background-image: url('/2025_03_11_0wn_Kleki.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    visibility: hidden;
+}
+
+.setup-item:hover {
+    color: #ffff00;
+}
+
+.setup-item:hover:before {
+    visibility: visible;
+}
+
+.current-inventory {
+    margin-top: 20px;
+    border: 2px solid white;
+    padding: 10px;
+}
+
+.current-inventory h3 {
+    margin-bottom: 10px;
+    color: white;
+}
+
+.custom-item-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.item-type-selector {
+    display: flex;
+    gap: 10px;
+    margin: 10px 0;
+}
+
+.item-type-button {
+    flex: 1;
+    color: white;
+    font-family: 'UndertaleDeltarune', sans-serif;
+    padding: 10px;
+    border: none;
+    background-color: transparent;
+    cursor: pointer;
+}
+
+.item-type-button:before {
+    content: "";
+    margin-right: 10px;
+    display: inline-block;
+    width: 14px;
+    height: 12px;
+    background-image: url('/2025_03_11_0wn_Kleki.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    visibility: hidden;
+}
+
+.item-type-button:hover {
+    color: #ffff00;
+}
+
+.item-type-button:hover:before {
+    visibility: visible;
+}
+
+.item-submit-button {
+    align-self: flex-start;
+    color: white;
+    font-family: 'UndertaleDeltarune', sans-serif;
+    padding: 10px 20px;
+    border: none;
+    background-color: transparent;
+    cursor: pointer;
+}
+
+.item-submit-button:before {
+    content: "";
+    margin-right: 10px;
+    display: inline-block;
+    width: 14px;
+    height: 12px;
+    background-image: url('/2025_03_11_0wn_Kleki.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    visibility: hidden;
+}
+
+.item-submit-button:hover {
+    color: #ffff00;
+}
+
+.item-submit-button:hover:before {
+    visibility: visible;
+}
+
+.no-items-message {
+    color: #ccc;
+    text-align: center;
+    padding: 10px;
+}
+
+.battle-end {
+    text-align: center;
+    padding: 20px;
+    background-color: #000;
+    border: 4px solid white;
+}
+
+.battle-end h2 {
+    margin-bottom: 20px;
+    font-size: 2rem;
+    color: #ffff00;
+}
+
+.reset-button {
+    background-color: transparent;
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    font-family: 'UndertaleDeltarune', sans-serif;
+}
+
+.reset-button:before {
+    content: "";
+    margin-right: 10px;
+    display: inline-block;
+    width: 14px;
+    height: 12px;
+    background-image: url('/2025_03_11_0wn_Kleki.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    visibility: hidden;
+}
+
+.reset-button:hover {
+    background-color: transparent;
+    color: #ffff00;
+}
+
+.reset-button:hover:before {
+    visibility: visible;
+}
+
+.empty-dialogue {
+    min-height: 1.5em;
+}
+
+.credits {
+    margin-top: 20px;
+    padding: 10px;
+    font-size: 0.8rem;
+    text-align: center;
+    color: #ccc;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.credits a {
+    color: #ffff00;
+    text-decoration: none;
+}
+
+.credits a:hover {
+    text-decoration: underline;
+}
