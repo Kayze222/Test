@@ -8,7 +8,7 @@
 }
 
 body {
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Comic Sans MS', sans-serif;
     background-color: var(--dark-bg);
     color: var(--text-color);
     margin: 0;
@@ -37,7 +37,7 @@ body {
 }
 
 #loading-screen button {
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Comic Sans MS', sans-serif;
     background-color: var(--primary-color);
     color: var(--text-color);
     border: 2px solid var(--secondary-color);
