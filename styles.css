@@ -41,3 +41,14 @@ button:hover {
   background-color: #00cc6e;
   transform: scale(1.05);
 }
+
+.video-wrapper {
+  margin-top: 20px;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+  border: 4px solid #00ff88;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+}
