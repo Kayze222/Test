@@ -149,6 +149,7 @@ p {
   align-items: center;
   font-family: 'Papyrus', sans-serif;
   z-index: 1000;
+  pointer-events: none; /* Prevent blocking the Zim button */
 }
 
 /* Rainbow flickering lights */
@@ -171,11 +172,17 @@ p {
   50% { background-position: 100% 100%; }
   100% { background-position: 0% 0%; }
 }
+
+/* Timer for rave and next rave */
+#rave-timer {
+  font-size: 1.2em;
+  color: white;
+  font-family: 'Arial', sans-serif;
+  margin-top: 10px;
+}
 </style>
 </head>
 <body>
-
-  <!-- Main content goes here -->
 
   <script src="scripts.js"></script>
 
