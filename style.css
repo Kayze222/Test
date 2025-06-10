@@ -55,12 +55,17 @@ body {
     box-shadow: 0 0 15px var(--glow-color);
 }
 
+#loading-screen button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: var(--dark-bg);
+}
+
 .small-text {
     font-size: 0.8rem;
     color: #aaa;
     margin-top: 1rem;
 }
-
 
 #game-container {
     display: grid;
@@ -205,6 +210,12 @@ body {
     color: var(--text-color);
 }
 
+.controls button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: var(--dark-bg);
+}
+
 #right-column h2 {
     color: var(--secondary-color);
     text-shadow: 0 0 5px var(--glow-color);
@@ -247,6 +258,14 @@ body {
     opacity: 1;
 }
 
+.building.disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    background: var(--dark-bg) !important;
+    border-color: var(--primary-color) !important;
+    transform: scale(1) !important;
+}
+
 .building.affordable {
     background-color: #4a2868;
     border-color: var(--secondary-color);
@@ -273,6 +292,7 @@ body {
 .building-info p {
     margin: 5px 0 0 0;
     font-size: 0.8rem;
+    color: #ccc;
 }
 .building-cost {
     display: flex;
@@ -291,6 +311,123 @@ body {
     color: var(--text-color);
     margin-left: 20px;
     text-shadow: 2px 2px 3px #000;
+    width: 60px;
+    text-align: center;
+}
+
+/* Slots */
+#slots-container {
+    margin-top: 30px;
+    padding: 15px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--primary-color);
+    border-radius: 10px;
+    text-align: center;
+    width: 90%;
+}
+
+#slots-reels {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin: 15px 0;
+}
+
+.reel {
+    width: 80px;
+    height: 80px;
+    border: 2px solid var(--secondary-color);
+    border-radius: 10px;
+    background: var(--dark-bg);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    transition: border-color 0.3s;
+}
+
+.reel.spinning {
+    filter: blur(2px);
+}
+
+.reel img {
+    width: 70px;
+    height: 70px;
+    object-fit: contain;
+}
+
+#spin-button {
+    font-family: 'Orbitron', sans-serif;
+    background-color: var(--primary-color);
+    color: var(--text-color);
+    border: 2px solid var(--secondary-color);
+    padding: 10px 20px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: 5px;
+}
+
+#spin-button:hover:not(:disabled) {
+    background-color: var(--secondary-color);
+    color: var(--dark-bg);
+    box-shadow: 0 0 15px var(--glow-color);
+}
+
+#spin-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+#spin-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+#spin-cost-text {
+    font-size: 0.8rem;
+    color: #aaa;
+    margin: 5px 0 10px 0;
+}
+
+#slots-result {
+    margin-top: 10px;
+    min-height: 1.2em;
+    font-size: 1rem;
+    font-weight: bold;
+    color: var(--secondary-color);
+    text-shadow: 0 0 5px var(--glow-color);
+}
+
+/* Cosmetic Upgrades */
+#walter-white-pinned {
+    position: absolute;
+    width: 150px;
+    height: auto;
+    z-index: 100;
+    cursor: grab;
+    filter: drop-shadow(3px 3px 8px rgba(0,0,0,0.8));
+    user-select: none;
+    -webkit-user-drag: none;
+}
+#walter-white-pinned:active {
+    cursor: grabbing;
+}
+
+.wandering-zombie {
+    position: absolute;
+    width: 100px;
+    height: auto;
+    bottom: 20px;
+    z-index: 50;
+    animation: walk-across 15s linear forwards;
+    pointer-events: none;
+    left: -110px; /* Start off-screen */
+}
+
+@keyframes walk-across {
+    from { transform: translateX(0); }
+    to { transform: translateX(calc(100vw + 120px)); }
 }
 
 @media (max-width: 900px) {
@@ -315,4 +452,3 @@ body {
         max-height: 400px;
     }
 }
-
