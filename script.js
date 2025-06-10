@@ -32,7 +32,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const gameContainer = document.getElementById('game-container');
     const saveButton = document.getElementById('save-button');
     const loadButton = document.getElementById('load-button');
-    const resetButton = document.getElementById('reset-button');
+    const resetButton = document.getElementById('reset-button'); const spinButton = document.getElementById('spin-button');
+    const spinCostText = document.getElementById('spin-cost-text');
+    const slotsResultEl = document.getElementById('slots-result');
+    const reels = [document.getElementById('reel1'), document.getElementById('reel2'), document.getElementById('reel3')];
 
     // Audio
     let audioContext;
@@ -41,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function setupAudio() {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const soundFiles = ['click.mp3', 'buy.mp3', 'error.mp3', 'background-music.mp3'];
+        const soundFiles = ['click.mp3', 'buy.mp3', 'error.mp3', 'background-music.mp3', 'slots_spin.mp3', 'slots_win.mp3'];
         for (const file of soundFiles) {
             const response = await fetch(file);
             const arrayBuffer = await response.arrayBuffer();
@@ -66,7 +69,6 @@ document.addEventListener('DOMContentLoaded', () => {
             backgroundMusicSource = source;
         }
     }
-
 
     function formatNumber(num) {
         if (num < 1000) return num.toFixed(1).replace(/\.0$/, '');
@@ -95,21 +97,44 @@ document.addEventListener('DOMContentLoaded', () => {
                 const buildingDiv = document.createElement('div');
                 buildingDiv.className = 'building';
                 buildingDiv.id = `building-${b.id}`;
-                buildingDiv.innerHTML = `
-                    <img src="${b.icon}" alt="${b.name}" class="building-icon">
-                    <div class="building-info">
-                        <h3>${b.name}</h3>
-                        <p class="building-cost">
-                            <img src="pervitin_icon.png" class="cost-icon"> ${formatNumber(cost)}
-                        </p>
-                        <p>+${formatNumber(b.pps)} PPS</p>
-                    </div>
-                    <div class="building-owned">${b.owned}</div>
-                `;
-                buildingDiv.addEventListener('click', () => buyBuilding(b.id));
+                
+                let buildingHTML;
+                if (b.type === 'special') {
+                    buildingHTML = `
+                        <img src="${b.icon}" alt="${b.name}" class="building-icon">
+                        <div class="building-info">
+                            <h3>${b.name}</h3>
+                            <p class="building-cost">
+                                <img src="pervitin_icon.png" class="cost-icon"> ${formatNumber(cost)}
+                            </p>
+                            <p>${b.description || ''}</p>
+                        </div>
+                        <div class="building-owned">${b.owned > 0 ? '✔️' : 'BUY'}</div>
+                    `;
+                } else {
+                    buildingHTML = `
+                        <img src="${b.icon}" alt="${b.name}" class="building-icon">
+                        <div class="building-info">
+                            <h3>${b.name}</h3>
+                            <p class="building-cost">
+                                <img src="pervitin_icon.png" class="cost-icon"> ${formatNumber(cost)}
+                            </p>
+                            <p>+${formatNumber(b.pps)} PPS</p>
+                        </div>
+                        <div class="building-owned">${b.owned}</div>
+                    `;
+                }
+                buildingDiv.innerHTML = buildingHTML;
+
+                if ((b.type === 'special' && b.owned > 0) || (b.name === "The Tallest" && b.owned >= 100)) { // Example of a cap
+                     buildingDiv.classList.add('disabled');
+                } else {
+                    buildingDiv.addEventListener('click', () => buyBuilding(b.id));
+                }
                 storeEl.appendChild(buildingDiv);
             }
         });
+        updateStore(); // To set initial affordable status
     }
 
     function updateStore() {
@@ -118,13 +143,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 const buildingEl = document.getElementById(`building-${b.id}`);
                 if (!buildingEl) return;
                 
-                buildingEl.classList.toggle('affordable', gameState.pervitins >= calculateCost(b));
-                
-                const costEl = buildingEl.querySelector('.building-cost');
-                costEl.innerHTML = `<img src="pervitin_icon.png" class="cost-icon"> ${formatNumber(calculateCost(b))}`;
-                
-                const ownedEl = buildingEl.querySelector('.building-owned');
-                ownedEl.textContent = b.owned;
+                const affordable = gameState.pervitins >= calculateCost(b);
+                buildingEl.classList.toggle('affordable', affordable && !buildingEl.classList.contains('disabled'));
+
+                if (b.type !== 'special') {
+                    const costEl = buildingEl.querySelector('.building-cost');
+                    costEl.innerHTML = `<img src="pervitin_icon.png" class="cost-icon"> ${formatNumber(calculateCost(b))}`;
+                    
+                    const ownedEl = buildingEl.querySelector('.building-owned');
+                    ownedEl.textContent = b.owned;
+                }
             }
         });
     }
@@ -147,11 +175,26 @@ document.addEventListener('DOMContentLoaded', () => {
         const cost = calculateCost(building);
 
         if (gameState.pervitins >= cost) {
-            playSound('buy.mp3');
-            gameState.pervitins -= cost;
-            building.owned++;
-            gameState.pervitinsPerSecond += building.pps;
-            updateDisplay();
+            if (building.type === 'special') {
+                if (building.owned > 0) {
+                    playSound('error.mp3');
+                    return; // Already bought
+                }
+                playSound('buy.mp3');
+                gameState.pervitins -= cost;
+                building.owned = 1;
+                if (building.actionName && typeof actions[building.actionName] === 'function') {
+                    actions[building.actionName]();
+                }
+                renderStore(); // Re-render to show it as bought
+                updateDisplay();
+            } else {
+                playSound('buy.mp3');
+                gameState.pervitins -= cost;
+                building.owned++;
+                gameState.pervitinsPerSecond += building.pps;
+                updateDisplay();
+            }
         } else {
             playSound('error.mp3');
         }
@@ -209,7 +252,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (gameBuilding) {
                     gameBuilding.owned = savedBuilding.owned;
                     gameBuilding.unlocked = savedBuilding.unlocked;
-                    totalPPS += gameBuilding.owned * gameBuilding.pps;
+                    if (gameBuilding.type === 'special' && gameBuilding.owned > 0) {
+                        if (gameBuilding.actionName && typeof actions[gameBuilding.actionName] === 'function') {
+                           actions[gameBuilding.actionName]();
+                        }
+                    } else if (gameBuilding.pps) {
+                        totalPPS += gameBuilding.owned * gameBuilding.pps;
+                    }
                 }
             });
             gameState.pervitinsPerSecond = totalPPS;
@@ -233,6 +282,149 @@ document.addEventListener('DOMContentLoaded', () => {
         gameState.pervitins += gameState.pervitinsPerSecond / 10; // Update 10 times per second
         unlockBuildings();
         updateDisplay();
+        spinButton.disabled = gameState.pervitins < spinCost;
+    }
+
+    // COSMETIC UPGRADE FUNCTIONS
+    function pinWalterToScreen() {
+        if (document.getElementById('walter-white-pinned')) return;
+        
+        const walter = document.createElement('img');
+        walter.id = 'walter-white-pinned';
+        walter.src = 'walter_white.png';
+        walter.alt = 'A mysterious chemist';
+        walter.style.left = '10vw';
+        walter.style.top = '50vh';
+        
+        document.body.appendChild(walter);
+        
+        let isDragging = false;
+        let offsetX, offsetY;
+
+        const startDrag = (e) => {
+            isDragging = true;
+            const event = e.touches ? e.touches[0] : e;
+            offsetX = event.clientX - walter.offsetLeft;
+            offsetY = event.clientY - walter.offsetTop;
+            walter.style.cursor = 'grabbing';
+            e.preventDefault();
+        };
+
+        const drag = (e) => {
+            if (isDragging) {
+                const event = e.touches ? e.touches[0] : e;
+                walter.style.left = `${event.clientX - offsetX}px`;
+                walter.style.top = `${event.clientY - offsetY}px`;
+            }
+        };
+
+        const endDrag = () => {
+            isDragging = false;
+            walter.style.cursor = 'grab';
+        };
+
+        walter.addEventListener('mousedown', startDrag);
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('mouseup', endDrag);
+
+        walter.addEventListener('touchstart', startDrag);
+        document.addEventListener('touchmove', drag);
+        document.addEventListener('touchend', endDrag);
+    }
+
+    function startSpawningZombies() {
+        if (window.zombieInterval) return;
+
+        window.zombieInterval = setInterval(() => {
+            const zombie = document.createElement('img');
+            zombie.src = 'zombie.png';
+            zombie.className = 'wandering-zombie';
+            zombie.style.bottom = `${Math.random() * 20 + 5}%`; // Randomize height
+            
+            if (Math.random() > 0.5) {
+                zombie.style.transform = 'scaleX(-1)'; // Flip direction
+            }
+            
+            document.body.appendChild(zombie);
+            
+            setTimeout(() => {
+                zombie.remove();
+            }, 15000); // Corresponds to animation duration in CSS
+        }, 8000); // Spawn every 8 seconds
+    }
+
+    const actions = { pinWalterToScreen, startSpawningZombies };
+
+    // SLOTS LOGIC
+    const spinCost = 1000;
+    const slotSymbols = [
+        { icon: 'rubber_pig.png', weight: 40, payout: 2 }, // Common
+        { icon: 'gir.png', weight: 25, payout: 5 },
+        { icon: 'minimoose.png', weight: 15, payout: 25 },
+        { icon: 'voot_cruiser.png', weight: 10, payout: 100 },
+        { icon: 'zim_head.png', weight: 5, payout: 500 }, // Rarest
+    ];
+    const weightedSymbols = slotSymbols.flatMap(s => Array(s.weight).fill(s));
+
+    function getRandomSymbol() {
+        return weightedSymbols[Math.floor(Math.random() * weightedSymbols.length)];
+    }
+
+    async function spinSlots() {
+        if (gameState.pervitins < spinCost || spinButton.disabled) {
+            playSound('error.mp3');
+            return;
+        }
+
+        gameState.pervitins -= spinCost;
+        spinButton.disabled = true;
+        slotsResultEl.textContent = '';
+        playSound('slots_spin.mp3');
+
+        // Animate reels
+        reels.forEach(r => r.classList.add('spinning'));
+        let spinInterval = setInterval(() => {
+            reels.forEach(reel => {
+                reel.querySelector('img').src = getRandomSymbol().icon;
+            });
+        }, 50);
+
+        // Stop reels one by one
+        setTimeout(() => {
+            clearInterval(spinInterval);
+            
+            const finalResults = [getRandomSymbol(), getRandomSymbol(), getRandomSymbol()];
+            reels.forEach((reel, i) => {
+                reel.querySelector('img').src = finalResults[i].icon;
+                reel.classList.remove('spinning');
+            });
+
+            checkWin(finalResults);
+            updateDisplay();
+
+        }, 1500); // Spin duration
+    }
+
+    function checkWin(results) {
+        let winAmount = 0;
+        let winMessage = "No luck, pathetic human!";
+
+        if (results[0].icon === results[1].icon && results[1].icon === results[2].icon) {
+            // Three of a kind
+            winAmount = spinCost * results[0].payout;
+            winMessage = `TRIPLE DOOM! You win ${formatNumber(winAmount)}!`;
+            playSound('slots_win.mp3');
+        } else if (results[0].icon === results[1].icon || results[1].icon === results[2].icon) {
+            // Two of a kind (adjacent)
+            const matchedSymbol = results[0].icon === results[1].icon ? results[0] : results[1];
+            winAmount = spinCost * (matchedSymbol.payout / 4);
+            winMessage = `A pitiful match! You win ${formatNumber(Math.floor(winAmount))}!`;
+        }
+        
+        if (winAmount > 0) {
+            gameState.pervitins += winAmount;
+        }
+        slotsResultEl.textContent = winMessage;
     }
     
     function init() {
@@ -240,7 +432,9 @@ document.addEventListener('DOMContentLoaded', () => {
         saveButton.addEventListener('click', saveGame);
         loadButton.addEventListener('click', loadGame);
         resetButton.addEventListener('click', resetGame);
+        spinButton.addEventListener('click', spinSlots);
         
+        spinCostText.textContent = `Cost: ${formatNumber(spinCost)} Pervitins`;
         loadGame(); // Try to load game on start
         renderStore();
         updateDisplay();
@@ -258,4 +452,3 @@ document.addEventListener('DOMContentLoaded', () => {
         init();
     }, { once: true });
 });
-
