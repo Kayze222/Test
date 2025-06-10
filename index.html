@@ -131,6 +131,14 @@
       background-color: #5f2b90;
     }
 
+    /* Image styling for Waltuh */
+    #waltuh-image {
+      display: none;
+      margin-top: 20px;
+      width: 300px;
+      height: auto;
+    }
+
   </style>
 </head>
 <body>
@@ -157,6 +165,12 @@
     <div class="shop-item" id="item5">jeff bezim - 1000 pervitins (Quadruple clicks)</div>
   </div>
 
+  <!-- Waltuh Image -->
+  <img id="waltuh-image" src="https://i.ytimg.com/vi/Fe6Rcx1tbEo/hq720.jpg?sqp=-oaymwE7CK4FEIIDSFryq4qpAy0IARUAAAAAGAElAADIQj0AgKJD8AEB-AH-CYAC0AWKAgwIABABGHIgUSgtMA8=&rs=AOn4CLCPHhj0igySkWo4Itf8R2Gv5W9aog" alt="Waltuh" />
+
+  <!-- Audio for Waltuh -->
+  <audio id="waltuh-audio" src="your-audio-file-link.m4a" preload="auto"></audio>
+
   <script>
     // Initialize score and items
     let score = 0;
@@ -174,6 +188,10 @@
       item4: document.getElementById('item4'),
       item5: document.getElementById('item5')
     };
+
+    // Waltuh image and audio
+    const waltuhImage = document.getElementById('waltuh-image');
+    const waltuhAudio = document.getElementById('waltuh-audio');
 
     // Update score display
     function updateScore() {
@@ -200,6 +218,10 @@
         score -= 50;
         autoClicker++;
         updateScore();
+
+        // Show Waltuh image and play sound when "hire waltuh" is clicked
+        waltuhImage.style.display = 'block';
+        waltuhAudio.play();
       }
     });
 
