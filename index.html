@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ZIMMMMMM</title>
+  <title>ZIMMMMMM - Zim Clicker</title>
   <style>
     /* Apply Comic Sans font */
     body {
@@ -64,12 +64,88 @@
         transform: rotate(0deg);
       }
     }
+
+    /* Button styling */
+    #clicker-button {
+      background-color: #ab7bd8;
+      color: white;
+      font-size: 1.5em;
+      border: none;
+      padding: 20px 40px;
+      cursor: pointer;
+      border-radius: 10px;
+      transition: background-color 0.3s;
+    }
+
+    #clicker-button:hover {
+      background-color: #737373;
+    }
+
+    /* Score display */
+    #score {
+      font-size: 2em;
+      color: #ff4747;
+      margin-top: 20px;
+    }
+
+    /* Reset button styling */
+    #reset-button {
+      background-color: #ff4747;
+      color: white;
+      font-size: 1.5em;
+      border: none;
+      padding: 20px 40px;
+      cursor: pointer;
+      border-radius: 10px;
+      margin-top: 20px;
+      transition: background-color 0.3s;
+    }
+
+    #reset-button:hover {
+      background-color: #b73c3c;
+    }
   </style>
 </head>
 <body>
 
   <h1>ZIMMMMMMM</h1>
   <p>she zorn on my hub till i zim</p>
+
+  <!-- Button to click and score points -->
+  <button id="clicker-button">Click Me!</button>
+
+  <!-- Display the score -->
+  <div id="score">Points: 0</div>
+
+  <!-- Reset Button -->
+  <button id="reset-button">Reset Score</button>
+
+  <script>
+    // Initialize score
+    let score = 0;
+
+    // Get elements
+    const scoreDisplay = document.getElementById('score');
+    const clickerButton = document.getElementById('clicker-button');
+    const resetButton = document.getElementById('reset-button');
+
+    // Update score display
+    function updateScore() {
+      scoreDisplay.textContent = 'Points: ' + score;
+    }
+
+    // Increase score on click
+    clickerButton.addEventListener('click', function() {
+      score++;
+      updateScore();
+    });
+
+    // Reset score
+    resetButton.addEventListener('click', function() {
+      score = 0;
+      updateScore();
+    });
+  </script>
 
 </body>
 </html>
