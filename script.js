@@ -6,16 +6,16 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const buildings = [
-        { id: 0, name: "GIR", baseCost: 15, pps: 0.1, owned: 0, flavor: "He's making waffles... and Pervitins.", icon: 'gir.png', unlocked: true },
-        { id: 1, name: "Minimoose", baseCost: 100, pps: 1, owned: 0, flavor: "Floats menacingly. For DOOM.", icon: 'minimoose.png', unlocked: false },
-        { id: 2, name: "Voot Cruiser", baseCost: 1100, pps: 8, owned: 0, flavor: "Tiny ships for... reconnaissance.", icon: 'voot_cruiser.png', unlocked: false },
-        { id: 3, name: "Megadoomer", baseCost: 12000, pps: 47, owned: 0, flavor: "It's got a squeaky sound!", icon: 'megadoomer.png', unlocked: false },
-        { id: 4, name: "Irken Armada", baseCost: 130000, pps: 260, owned: 0, flavor: "The entire might of the Irken Empire.", icon: 'irken_armada.png', unlocked: false },
-        { id: 5, name: "The Tallest", baseCost: 1400000, pps: 1400, owned: 0, flavor: "They drop Pervitins while snacking.", icon: 'the_tallest.png', unlocked: false }
+        { id: 0, name: "gilld chees", baseCost: 15, pps: 0.5, owned: 0, flavor: "look at the greed", icon: 'gir.png', unlocked: true },
+        { id: 1, name: "idk", baseCost: 100, pps: 1, owned: 0, flavor: "Floats menacingly. For DOOM.", icon: 'minimoose.png', unlocked: false },
+        { id: 2, name: "jeff bezim", baseCost: 1100, pps: 8, owned: 0, flavor: "Tiny ships for... reconnaissance.", icon: 'voot_cruiser.png', unlocked: false },
+        { id: 3, name: "dildo", baseCost: 12000, pps: 47, owned: 0, flavor: "It's got a squeaky sound!", icon: 'megadoomer.png', unlocked: false },
+        { id: 4, name: "are you not bored yet", baseCost: 130000, pps: 260, owned: 0, flavor: "The entire might of the Irken Empire.", icon: 'irken_armada.png', unlocked: false },
+        { id: 5, name: "zorn dealers", baseCost: 1400000, pps: 1400, owned: 0, flavor: "They drop Pervitins while snacking.", icon: 'the_tallest.png', unlocked: false }
     ];
 
     const flavorTexts = [
-        "I am ZIM!", "Prepare your bladder for imminent release!", "I was the turkey ALL ALONG!", "The great thing about awesome things is that they're awesome!", "LIES!", "It's not poo, it's a cookie!", "I'm gonna sing The Doom Song now!", "Why was there BACON IN THE SOAP?!", "I put the fires out.", "Not now, son. I'm making toast."
+        "fuck shit up", "not family freindly", "the jonkler likes balls", "how big is an balls? ", "oopy goopy", "larry.", "I WAS IN HELL LOOKING AT HEAVEN", "GLADOS can get it ngl", "big booty latinas", "scout direct me to the nearest hentai factory"
     ];
 
     // DOM Elements
