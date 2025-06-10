@@ -126,7 +126,7 @@ chatBubbleStyle.textContent = `
 document.head.appendChild(chatBubbleStyle);
 
 const textureLoader = new THREE.TextureLoader();
-const headTexture = textureLoader.load('/pngOfTheHeadLOLL.png');
+const headTexture = textureLoader.load('Roblocks\HEAD.png');
 
 // Scene setup first
 const scene = new THREE.Scene();
@@ -1492,28 +1492,28 @@ composer.addPass(gradientPass);
 const skyboxes = {
     "Blue Sky": new THREE.Color(0.5, 0.7, 1.0),
     "Cloud Skybox": [
-        '/right.png',
-        '/left.png',
-        '/top (1).png',
-        '/bottom.png',
-        '/front.png',
-        '/back.png'
+        'Roblocks/right.png',
+        'Roblocks/left.png',
+        'Roblocks/top (1).png',
+        'Roblocks/bottom.png',
+        'Roblocks/front.png',
+        'Roblocks/back.png'
     ],
     "skybox": [
-        '/right.png',
-        '/left.png',
-        '/top (1).png',
-        '/bottom.png',
-        '/front.png',
-        '/back.png'
+        'Roblocks/right.png',
+        'Roblocks/left.png',
+        'Roblocks/top (1).png',
+        'Roblocks/bottom.png',
+        'Roblocks/front.png',
+        'Roblocks/back.png'
     ],
     "texture from sky": [
-        '/right.png',
-        '/left.png',
-        '/top (1).png',
-        '/bottom.png',
-        '/front.png',
-        '/back.png'
+        'Roblocks/right.png',
+        'Roblocks/left.png',
+        'Roblocks/top (1).png',
+        'Roblocks/bottom.png',
+        'Roblocks/front.png',
+        'Roblocks/back.png'
     ],
     "Cyan Gradient": new THREE.Color(0.5, 0.9, 1.0),
 };
@@ -2025,7 +2025,7 @@ objLoader.load('Bighead.obj', (loadedHead) => {
 
 const floorGeometry = new THREE.BoxGeometry(512, 20, 512);
 const floorTextureLoader = new THREE.TextureLoader();
-floorTexture = floorTextureLoader.load('/74271da913ead2df3efbe300944f49a7f18dab14.png',
+floorTexture = floorTextureLoader.load('/Roblocks/74271da913ead2df3efbe300944f49a7f18dab14.png',
     () => {
         floorTexture.colorSpace = THREE.SRGBColorSpace;
         applyFloorTextureRepeat();
