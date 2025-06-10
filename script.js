@@ -3,8 +3,8 @@ let score = 0;
 let autoClicker = 0;
 let clickMultiplier = 1;
 let raveActive = false;
-let nextRaveIn = 30;
-let raveTimeRemaining = 5;
+let nextRaveIn = 30; // Time until next rave in seconds
+let raveTimeRemaining = 5; // Rave duration (5 seconds)
 
 // Get elements
 const scoreDisplay = document.getElementById('score');
@@ -67,23 +67,24 @@ setInterval(function() {
     raveEffect.style.display = 'flex';
     rainbowLights.style.display = 'block';
 
-    // Rave countdown
+    // Start rave countdown
     let raveCountdown = setInterval(function() {
       raveTimeDisplay.textContent = raveTimeRemaining;
       raveTimeRemaining--;
+
       if (raveTimeRemaining < 0) {
         clearInterval(raveCountdown);
         raveEffect.style.display = 'none';
         rainbowLights.style.display = 'none';
         raveActive = false;
-        raveTimeRemaining = 5; // Reset rave time
-        nextRaveIn = 30; // Reset the countdown for next rave
+        raveTimeRemaining = 5; // Reset rave duration
+        nextRaveIn = 30; // Reset next rave timer
       }
-    }, 1000);
-
+    }, 1000); // 1-second intervals for rave countdown
   }
-  // Update next rave timer
+
+  // Update next rave timer and countdown
   nextRaveTimeDisplay.textContent = nextRaveIn;
   nextRaveIn--;
 
-}, 1000); // Update timer every second
+}, 1000); // Update every second
