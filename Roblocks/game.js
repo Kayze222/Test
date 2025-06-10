@@ -143,8 +143,14 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 // Initialize multiplayer room after scene is created
-const room = new window.MockSocket();
-await room.initialize();
+const room = {
+  clientId: 'localPlayer',
+  peers: { 'localPlayer': { username: 'hardcore' } },
+  onmessage: () => {},
+  subscribePresence: () => {},
+  updatePresence: () => {},
+  send: () => {}
+};
 
 const ADMIN_USERS = ['hardcore', 'websimbro', 'bastiancarcamo', 'yos', 'grey168', 'Dorian2007', 'jayy', 'uglybridge9252621', 'uglybridge', 'adjectivenounnumber', 'Lwebb2013', 'readystatue8153930']; 
 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
