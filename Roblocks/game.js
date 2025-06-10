@@ -143,7 +143,7 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 // Initialize multiplayer room after scene is created
-const room = new WebsimSocket();
+const room = new window.MockSocket();
 await room.initialize();
 
 const ADMIN_USERS = ['hardcore', 'websimbro', 'bastiancarcamo', 'yos', 'grey168', 'Dorian2007', 'jayy', 'uglybridge9252621', 'uglybridge', 'adjectivenounnumber', 'Lwebb2013', 'readystatue8153930']; 
