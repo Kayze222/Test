@@ -15,8 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ];
 
     const flavorTexts = [
-        "fuck shit up", "not family freindly", "the jonkler likes balls", "how big is an balls? ", "oopy goopy", "larry.", "I WAS IN HELL LOOKING AT HEAVEN", "GLADOS can get it ngl", "big booty latinas", "scout direct me to the nearest hentai factory" , "i shoved my dick inside a bread before" - scout" , "i only hit my wife -Kumi 2025" , "top 10 most breedable sluts in west korea -scout 3.5.2025" , "No memes in dumb quotes -vero" , "I hate the concept of giant pussy walking towards you, shooting pussy beam at you - demonic" , "why are you licking my shit? - jorgen" , "Fuck kids, I DIDN'T MEAN IT LIKE THA - jeezer." , "
-it just gets boring when they turn 18 - jeezer." , "pengis - henhenma"
+        "fuck shit up", "not family freindly", "the jonkler likes balls", "how big is an balls? ", "oopy goopy", "larry.", "I WAS IN HELL LOOKING AT HEAVEN", "GLADOS can get it ngl", "big booty latinas", "scout direct me to the nearest hentai factory" , "i shoved my dick inside a bread before - scout" , "i only hit my wife -Kumi 2025" , "top 10 most breedable sluts in west korea -scout 3.5.2025" , "No memes in dumb quotes -vero" , "I hate the concept of giant pussy walking towards you, shooting pussy beam at you - demonic" , "why are you licking my shit? - jorgen" , "Fuck kids, I DIDN'T MEAN IT LIKE THA - jeezer." , "it just gets boring when they turn 18 - jeezer." , "pengis - henhenma"
     ];
 
     // DOM Elements
