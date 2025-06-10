@@ -1,0 +1,78 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Romanian Simulator</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="game-container">
+        <div id="start-screen" class="screen">
+            <div class="title-card">
+                <h1>Romanian Simulator</h1>
+                <h2>Component Conquest</h2>
+                <p>Break in, strip the PC, get out before the timer runs out!</p>
+                <button id="start-button">Start Your Career</button>
+            </div>
+        </div>
+
+        <div id="hub-screen" class="screen hidden">
+            <div class="title-card">
+                <h1>The Hideout</h1>
+                <p>You have <span id="bank-balance">0</span> Lei in the bank.</p>
+                <div class="hub-buttons">
+                    <button id="hub-heist-button">Start New Heist</button>
+                    <button id="hub-shop-button">Visit Shop</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="shop-screen" class="screen hidden">
+            <div class="title-card">
+                <h1>Shady Goods</h1>
+                <p>Your Balance: <span id="shop-balance">0</span> Lei</p>
+                <div id="shop-items-container"></div>
+                <button id="shop-back-button">Back to Hideout</button>
+            </div>
+        </div>
+
+        <div id="game-screen" class="screen hidden">
+            <div id="pc-area">
+                <img src="motherboard.png" id="motherboard" class="component" data-part-id="motherboard">
+                <img src="cpu.png" id="cpu" class="component" data-part-id="cpu">
+                <img src="cpu-cooler.png" id="cpu-cooler" class="component" data-part-id="cpu-cooler">
+                <img src="ram.png" id="ram1" class="component ram" data-part-id="ram1">
+                <img src="ram.png" id="ram2" class="component ram" data-part-id="ram2">
+                <img src="gpu.png" id="gpu" class="component" data-part-id="gpu">
+                <img src="ssd.png" id="ssd" class="component" data-part-id="ssd">
+                <img src="psu.png" id="psu" class="component" data-part-id="psu">
+            </div>
+            <div id="info-panel">
+                <div id="timer">TIME LEFT: <span id="time">60</span>s</div>
+                <div class="inventory-box">
+                    <h2>LOOT</h2>
+                    <ul id="inventory-list"></ul>
+                    <h3>Total Value: <span id="score">0</span> Lei</h3>
+                </div>
+                 <div class="instructions">
+                    <h3>Order of Operations</h3>
+                    <p>Some parts can only be removed after others. Think like a PC builder, but in reverse!</p>
+                </div>
+                <button id="escape-button">Escape Now!</button>
+            </div>
+        </div>
+
+        <div id="end-screen" class="screen hidden">
+             <div class="title-card">
+                <h2 id="end-message"></h2>
+                <p>Your Loot Value: <span id="final-score">0</span> Lei</p>
+                <button id="restart-button">Continue</button>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

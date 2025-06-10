@@ -1,0 +1,240 @@
+body {
+    background-color: #1a1a1a;
+    color: #0f0;
+    font-family: 'VT323', monospace;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    font-size: 18px;
+    background-image: url('house_interior.png');
+    background-size: cover;
+    background-position: center;
+}
+
+#game-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(10px) brightness(0.5);
+}
+
+.screen {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+.hidden {
+    display: none;
+}
+
+.title-card {
+    background-color: rgba(0, 0, 0, 0.7);
+    border: 2px solid #0f0;
+    padding: 2rem 4rem;
+    text-align: center;
+    box-shadow: 0 0 20px #0f0;
+}
+
+h1 {
+    font-size: 4rem;
+    margin: 0;
+    color: #ff00ff;
+    text-shadow: 0 0 10px #ff00ff;
+}
+
+h2 {
+    font-size: 2.5rem;
+    color: #0f0;
+    margin: 0.5rem 0 1rem 0;
+}
+
+button {
+    background-color: #0f0;
+    color: #1a1a1a;
+    border: none;
+    padding: 1rem 2rem;
+    font-family: 'VT323', monospace;
+    font-size: 1.5rem;
+    cursor: pointer;
+    margin-top: 1rem;
+    text-transform: uppercase;
+    transition: all 0.2s ease;
+}
+
+button:hover {
+    background-color: #ff00ff;
+    color: #fff;
+    box-shadow: 0 0 15px #ff00ff;
+}
+
+button:disabled {
+    background-color: #555;
+    color: #999;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+    filter: none;
+}
+
+#hub-screen .hub-buttons {
+    display: flex;
+    gap: 20px;
+    margin-top: 2rem;
+}
+
+#shop-screen .title-card {
+    width: 80%;
+    max-width: 800px;
+}
+
+#shop-items-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin: 2rem 0;
+    width: 100%;
+    text-align: left;
+}
+
+.shop-item {
+    border: 2px solid #0f0;
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+}
+
+.shop-item h4 {
+    margin: 0 0 10px 0;
+    font-size: 1.5rem;
+    color: #ff00ff;
+}
+
+.shop-item p {
+    margin: 0 0 15px 0;
+    font-size: 1rem;
+    flex-grow: 1;
+}
+
+.shop-item .price {
+    font-weight: bold;
+    font-size: 1.2rem;
+    flex-grow: 0;
+}
+
+.shop-item button {
+    width: 100%;
+    font-size: 1.2rem;
+    padding: 0.5rem 1rem;
+    margin-top: auto;
+}
+
+#game-screen {
+    flex-direction: row;
+    justify-content: space-around;
+    gap: 20px;
+    padding: 20px;
+}
+
+#pc-area {
+    position: relative;
+    width: 65%;
+    max-width: 900px;
+    aspect-ratio: 4 / 3;
+    background-color: rgba(0, 0, 0, 0.5);
+    border: 2px solid #0f0;
+}
+
+.component {
+    position: absolute;
+    cursor: pointer;
+    transition: transform 0.2s ease, filter 0.2s ease, opacity 0.5s ease;
+}
+
+.component:hover {
+    transform: scale(1.05);
+    filter: drop-shadow(0 0 10px yellow);
+}
+
+.component.removed {
+    opacity: 0;
+    pointer-events: none;
+}
+
+#motherboard { width: 80%; top: 10%; left: 10%; z-index: 1; }
+#psu { width: 25%; top: 68%; left: 12%; z-index: 2; }
+#gpu { width: 50%; top: 25%; left: 25%; z-index: 10; transform: rotate(-1deg); }
+#ram1 { width: 20%; top: 20%; left: 55%; z-index: 5; }
+#ram2 { width: 20%; top: 20%; left: 62%; z-index: 5; }
+#cpu-cooler { width: 25%; top: 23%; left: 30%; z-index: 8; }
+#cpu { width: 8%; top: 28%; left: 38.5%; z-index: 7; }
+#ssd { width: 15%; top: 55%; left: 25%; z-index: 9; transform: rotate(50deg); }
+
+
+#info-panel {
+    width: 30%;
+    max-width: 400px;
+    height: 90%;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+#timer {
+    font-size: 2rem;
+    text-align: center;
+    color: #ff00ff;
+    text-shadow: 0 0 10px #ff00ff;
+    border: 2px solid #0f0;
+    padding: 10px;
+    background: rgba(0,0,0,0.7);
+}
+
+.inventory-box, .instructions {
+    border: 2px solid #0f0;
+    padding: 15px;
+    background: rgba(0,0,0,0.7);
+}
+
+.inventory-box {
+    flex-grow: 1;
+}
+
+.inventory-box h2, .inventory-box h3 {
+    margin: 0 0 10px 0;
+    text-align: center;
+}
+
+#inventory-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    height: 150px;
+    overflow-y: auto;
+}
+
+#inventory-list li {
+    padding: 2px 5px;
+}
+
+#inventory-list li:nth-child(odd) {
+    background-color: rgba(0, 255, 0, 0.1);
+}
+
+#escape-button {
+    background-color: #e67e22; /* A nice orange */
+    color: #1a1a1a;
+}
+
+#escape-button:hover {
+    background-color: #f39c12;
+    box-shadow: 0 0 15px #f39c12;
+}
