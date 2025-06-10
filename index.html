@@ -13,14 +13,15 @@
       padding: 50px;
     }
 
-    /* Bouncing text effect */
+    /* Title with Comic Sans */
     h1 {
+      font-family: 'Comic Sans MS', sans-serif;
       font-size: 4em;
       color: #ab7bd8;
       animation: bounce 1s infinite alternate;
     }
 
-    /* Funny color change effect on hover */
+    /* Funny color change effect on hover for title */
     h1:hover {
       color: #737373;
       font-size: 25em;
@@ -45,6 +46,7 @@
       font-size: 1.5em;
       color: #86e8ef;
       animation: wiggle 1s ease-in-out infinite;
+      font-family: 'Arial', sans-serif;
     }
 
     @keyframes wiggle {
@@ -75,6 +77,7 @@
       cursor: pointer;
       border-radius: 10px;
       transition: background-color 0.3s;
+      font-family: 'Papyrus', sans-serif;
     }
 
     #clicker-button:hover {
@@ -86,6 +89,7 @@
       font-size: 2em;
       color: #86e8ef;
       margin-top: 20px;
+      font-family: 'Courier New', monospace;
     }
 
     /* Reset button styling */
@@ -99,11 +103,34 @@
       border-radius: 10px;
       margin-top: 20px;
       transition: background-color 0.3s;
+      font-family: 'Georgia', serif;
     }
 
     #reset-button:hover {
       background-color: #1e7076;
     }
+
+    /* Shop and item styling */
+    #shop {
+      margin-top: 40px;
+      font-family: 'Verdana', sans-serif;
+    }
+
+    .shop-item {
+      background-color: #ff4747;
+      color: white;
+      padding: 15px;
+      margin: 10px;
+      border-radius: 10px;
+      font-size: 1.2em;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    .shop-item:hover {
+      background-color: #b73c3c;
+    }
+
   </style>
 </head>
 <body>
@@ -120,31 +147,102 @@
   <!-- Reset Button -->
   <button id="reset-button">eat pervitins</button>
 
+  <!-- Shop Section -->
+  <div id="shop">
+    <h2>Shop</h2>
+    <div class="shop-item" id="item1">Buy "Zim Bot" - Cost: 50 pervitins (Auto clicker)</div>
+    <div class="shop-item" id="item2">Buy "Zornifier" - Cost: 100 pervitins (Double clicks)</div>
+    <div class="shop-item" id="item3">Buy "Zim Booster" - Cost: 200 pervitins (Triple clicks)</div>
+    <div class="shop-item" id="item4">Buy "Super Zim" - Cost: 500 pervitins (Increases auto clicks speed)</div>
+    <div class="shop-item" id="item5">Buy "Mega Zorn" - Cost: 1000 pervitins (Quadruple clicks)</div>
+  </div>
+
   <script>
-    // Initialize score
+    // Initialize score and items
     let score = 0;
+    let autoClicker = 0;
+    let clickMultiplier = 1;
 
     // Get elements
     const scoreDisplay = document.getElementById('score');
     const clickerButton = document.getElementById('clicker-button');
     const resetButton = document.getElementById('reset-button');
+    const shopItems = {
+      item1: document.getElementById('item1'),
+      item2: document.getElementById('item2'),
+      item3: document.getElementById('item3'),
+      item4: document.getElementById('item4'),
+      item5: document.getElementById('item5')
+    };
 
     // Update score display
     function updateScore() {
       scoreDisplay.textContent = 'pervitins: ' + score;
     }
 
-    // Increase score on click
+    // Increase score on click (with multiplier)
     clickerButton.addEventListener('click', function() {
-      score++;
+      score += clickMultiplier;
       updateScore();
     });
 
     // Reset score
     resetButton.addEventListener('click', function() {
       score = 0;
+      autoClicker = 0;
+      clickMultiplier = 1;
       updateScore();
     });
+
+    // Shop item functionality
+    shopItems.item1.addEventListener('click', function() {
+      if (score >= 50) {
+        score -= 50;
+        autoClicker++;
+        updateScore();
+      }
+    });
+
+    shopItems.item2.addEventListener('click', function() {
+      if (score >= 100) {
+        score -= 100;
+        clickMultiplier = 2;
+        updateScore();
+      }
+    });
+
+    shopItems.item3.addEventListener('click', function() {
+      if (score >= 200) {
+        score -= 200;
+        clickMultiplier = 3;
+        updateScore();
+      }
+    });
+
+    shopItems.item4.addEventListener('click', function() {
+      if (score >= 500) {
+        score -= 500;
+        autoClicker += 2;
+        updateScore();
+      }
+    });
+
+    shopItems.item5.addEventListener('click', function() {
+      if (score >= 1000) {
+        score -= 1000;
+        clickMultiplier = 4;
+        updateScore();
+      }
+    });
+
+    // Auto clicker
+    setInterval(function() {
+      if (autoClicker > 0) {
+        score += autoClicker * clickMultiplier;
+        updateScore();
+      }
+    }, 1000);
+
   </script>
 
 </body>
