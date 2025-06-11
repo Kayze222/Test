@@ -260,12 +260,16 @@ function loadGame() {
     const savedState = localStorage.getItem('zimClickerSave');
     if (savedState) {
         const gameState = JSON.parse(savedState);
-        score = gameState.score;
-        gameState.upgrades.forEach((savedUpgrade, index) => {
-            if (upgrades[index]) {
-                upgrades[index].count = savedUpgrade.count;
-            }
-        });
+        score = gameState.score || 0;
+
+        if (Array.isArray(gameState.upgrades)) {
+            gameState.upgrades.forEach((savedUpgrade, index) => {
+                if (upgrades[index]) {
+                    upgrades[index].count = savedUpgrade.count;
+                }
+            });
+        }
+
         return true;
     }
     return false;
