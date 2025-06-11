@@ -1,3 +1,5 @@
+import confetti from 'canvas-confetti';
+
 // --- STATE ---
 let score = 0;
 let perSecond = 0;
