@@ -1,454 +1,330 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const gameState = {
-        pervitins: 0,
-        pervitinsPerClick: 1,
-        pervitinsPerSecond: 0,
-    };
+import confetti from 'canvas-confetti';
 
-    const buildings = [
-        { id: 0, name: "gilld chees", baseCost: 15, pps: 0.5, owned: 0, flavor: "look at the greed", icon: 'gir.png', unlocked: true },
-        { id: 1, name: "idk", baseCost: 100, pps: 1, owned: 0, flavor: "Floats menacingly. For DOOM.", icon: 'minimoose.png', unlocked: false },
-        { id: 2, name: "jeff bezim", baseCost: 1100, pps: 8, owned: 0, flavor: "Tiny ships for... reconnaissance.", icon: 'voot_cruiser.png', unlocked: false },
-        { id: 3, name: "dildo", baseCost: 12000, pps: 47, owned: 0, flavor: "It's got a squeaky sound!", icon: 'megadoomer.png', unlocked: false },
-        { id: 4, name: "are you not bored yet", baseCost: 130000, pps: 260, owned: 0, flavor: "The entire might of the Irken Empire.", icon: 'irken_armada.png', unlocked: false },
-        { id: 5, name: "zorn dealers", baseCost: 1400000, pps: 1400, owned: 0, flavor: "They drop Pervitins while snacking.", icon: 'the_tallest.png', unlocked: false }
-    ];
+// --- STATE ---
+let score = 0;
+let perSecond = 0;
 
-    const flavorTexts = [
-        "fuck shit up", "not family freindly", "the jonkler likes balls", "how big is an balls? ", "oopy goopy", "larry.", "I WAS IN HELL LOOKING AT HEAVEN", "GLADOS can get it ngl", "big booty latinas", "scout direct me to the nearest hentai factory" , "i shoved my dick inside a bread before - scout" , "i only hit my wife -Kumi 2025" , "top 10 most breedable sluts in west korea -scout 3.5.2025" , "No memes in dumb quotes -vero" , "I hate the concept of giant pussy walking towards you, shooting pussy beam at you - demonic" , "why are you licking my shit? - jorgen" , "Fuck kids, I DIDN'T MEAN IT LIKE THA - jeezer." , "it just gets boring when they turn 18 - jeezer." , "pengis - henhenma"
-    ];
+const upgrades = [
+    { name: 'vero slaves', baseCost: 15, pps: 0.1, count: 0, icon: 'minimoose.png' },
+    { name: 'game advertisement', baseCost: 100, pps: 1, count: 0, icon: 'rubber_pig.png' },
+    { name: 'shady connection', baseCost: 1100, pps: 8, count: 0, icon: 'voot_cruiser.png' },
+    { name: 'scout', baseCost: 12000, pps: 47, count: 0, icon: 'irken_armada.png' },
+    { name: 'music label', baseCost: 130000, pps: 260, count: 0, icon: 'the_tallest.png' },
+    { name: 'waltuh white', baseCost: 1400000, pps: 1400, count: 0, icon: 'megadoomer.png' },
+    { name: 'presidential backing', baseCost: 15000000, pps: 7800, count: 0, icon: 'white_house.png' },
+    { name: 'adam sandlers approval', baseCost: 200000000, pps: 44000, count: 0, icon: 'adam_sandler.png' },
+    { name: 'poland', baseCost: 3300000000, pps: 260000, count: 0, icon: 'poland.png' },
+    { name: 'moon mission', baseCost: 51000000000, pps: 1600000, count: 0, icon: 'the_moon.png' },
+    { name: 'nukes luscious ass', baseCost: 750000000000, pps: 10000000, count: 0, icon: 'nuke.png' }
+];
 
-    // DOM Elements
-    const pervitinCountEl = document.getElementById('pervitin-count');
-    const ppsCountEl = document.getElementById('pps-count');
-    const zimHeadEl = document.getElementById('zim-head');
-    const zimClickerEl = document.getElementById('zim-clicker');
-    const storeEl = document.getElementById('store');
-    const flavorTextEl = document.getElementById('flavor-text');
+// --- DOM ELEMENTS ---
+const scoreDisplay = document.getElementById('score');
+const ppsDisplay = document.getElementById('pps');
+const clickerImage = document.getElementById('clicker-image');
+const upgradesGrid = document.getElementById('upgrades-grid');
+const resetButton = document.getElementById('reset-button');
+const saveButton = document.getElementById('save-button');
+const loadButton = document.getElementById('load-button');
+const slotMachineContainer = document.getElementById('slot-machine-container');
+const slotMachine2Container = document.getElementById('slot-machine-2-container');
+const startButton = document.getElementById('start-button');
+const loadingScreen = document.getElementById('loading-screen');
+const gameContainer = document.getElementById('game-container');
+
+
+// --- AUDIO ---
+let audioContext;
+const audioBuffers = {};
+
+function initAudio() {
+    if (audioContext) return;
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+}
+
+async function loadSound(name, url) {
+    if (!audioContext) return;
+    try {
+        const response = await fetch(url);
+        const arrayBuffer = await response.arrayBuffer();
+        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+        audioBuffers[name] = audioBuffer;
+    } catch (error) {
+        console.error(`Failed to load sound: ${name}`, error);
+    }
+}
+
+function playSound(name) {
+    if (!audioContext || !audioBuffers[name]) return;
+    if (audioContext.state === 'suspended') {
+        audioContext.resume();
+    }
+    const source = audioContext.createBufferSource();
+    source.buffer = audioBuffers[name];
+    source.connect(audioContext.destination);
+    source.start(0);
+}
+
+// --- GAME LOGIC ---
+function formatNumber(num) {
+    if (num < 1e6) return num.toLocaleString('en', {maximumFractionDigits: 0});
+    if (num < 1e9) return (num / 1e6).toFixed(2) + 'M';
+    if (num < 1e12) return (num / 1e9).toFixed(2) + 'B';
+    if (num < 1e15) return (num / 1e12).toFixed(2) + 'T';
+    return num.toExponential(2);
+}
+
+function calculateCost(upgrade) {
+    return Math.floor(upgrade.baseCost * Math.pow(1.15, upgrade.count));
+}
+
+function buyUpgrade(index) {
+    const upgrade = upgrades[index];
+    const cost = calculateCost(upgrade);
+    if (score >= cost) {
+        score -= cost;
+        upgrade.count++;
+        recalculatePPS();
+        updateUI();
+        playSound('buy');
+    }
+}
+
+function recalculatePPS() {
+    perSecond = upgrades.reduce((total, u) => total + u.count * u.pps, 0);
+}
+
+function clickAction() {
+    score++;
+    updateUI();
+    playSound('click');
     
-    // Buttons
-    const startButton = document.getElementById('start-button');
-    const loadingScreen = document.getElementById('loading-screen');
-    const gameContainer = document.getElementById('game-container');
-    const saveButton = document.getElementById('save-button');
-    const loadButton = document.getElementById('load-button');
-    const resetButton = document.getElementById('reset-button'); const spinButton = document.getElementById('spin-button');
-    const spinCostText = document.getElementById('spin-cost-text');
-    const slotsResultEl = document.getElementById('slots-result');
-    const reels = [document.getElementById('reel1'), document.getElementById('reel2'), document.getElementById('reel3')];
+    // Add a little visual effect on click
+    const clicker = document.getElementById('zim-clicker');
+    const plusOne = document.createElement('div');
+    plusOne.textContent = '+1';
+    plusOne.style.position = 'absolute';
+    plusOne.style.left = `${Math.random() * 50 + 25}%`;
+    plusOne.style.top = `${Math.random() * 20 + 40}%`;
+    plusOne.style.fontSize = '1.5em';
+    plusOne.style.fontWeight = 'bold';
+    plusOne.style.color = '#ff00ff';
+    plusOne.style.pointerEvents = 'none';
+    plusOne.style.textShadow = '1px 1px #00ffff';
+    plusOne.style.transition = 'opacity 0.5s, transform 0.5s';
+    clicker.appendChild(plusOne);
 
-    // Audio
-    let audioContext;
-    const audioBuffers = {};
-    let backgroundMusicSource;
+    setTimeout(() => {
+        plusOne.style.opacity = '0';
+        plusOne.style.transform = 'translateY(-50px)';
+        setTimeout(() => plusOne.remove(), 500);
+    }, 100);
+}
 
-    async function setupAudio() {
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const soundFiles = ['click.mp3', 'buy.mp3', 'error.mp3', 'background-music.mp3', 'slots_spin.mp3', 'slots_win.mp3'];
-        for (const file of soundFiles) {
-            const response = await fetch(file);
-            const arrayBuffer = await response.arrayBuffer();
-            audioBuffers[file] = await audioContext.decodeAudioData(arrayBuffer);
-        }
-    }
+function gameLoop() {
+    score += perSecond / 10; // Update 10 times per second for smoother display
+    updateUI();
+}
 
-    function playSound(name, loop = false) {
-        if (!audioContext || !audioBuffers[name]) return;
-        
-        if (name === 'background-music.mp3' && backgroundMusicSource) {
-            backgroundMusicSource.stop();
-        }
+function updateUI() {
+    scoreDisplay.textContent = formatNumber(Math.floor(score));
+    ppsDisplay.textContent = formatNumber(perSecond.toFixed(1));
+    updateUpgradesUI();
+    updateSlotsUI();
+}
 
-        const source = audioContext.createBufferSource();
-        source.buffer = audioBuffers[name];
-        source.connect(audioContext.destination);
-        source.loop = loop;
-        source.start(0);
-
-        if (loop) {
-            backgroundMusicSource = source;
-        }
-    }
-
-    function formatNumber(num) {
-        if (num < 1000) return num.toFixed(1).replace(/\.0$/, '');
-        const suffixes = ["", "k", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc"];
-        const i = Math.floor(Math.log10(num) / 3);
-        const shortNum = (num / Math.pow(1000, i)).toFixed(2);
-        return shortNum.replace(/\.00$/, '') + suffixes[i];
-    }
-
-    function updateDisplay() {
-        pervitinCountEl.textContent = formatNumber(Math.floor(gameState.pervitins));
-        ppsCountEl.textContent = formatNumber(gameState.pervitinsPerSecond);
-        document.title = `${formatNumber(Math.floor(gameState.pervitins))} Pervitins - Zim Clicker`;
-        updateStore();
-    }
-
-    function calculateCost(building) {
-        return Math.ceil(building.baseCost * Math.pow(1.15, building.owned));
-    }
-
-    function renderStore() {
-        storeEl.innerHTML = '';
-        buildings.forEach(b => {
-            if (b.unlocked) {
-                const cost = calculateCost(b);
-                const buildingDiv = document.createElement('div');
-                buildingDiv.className = 'building';
-                buildingDiv.id = `building-${b.id}`;
-                
-                let buildingHTML;
-                if (b.type === 'special') {
-                    buildingHTML = `
-                        <img src="${b.icon}" alt="${b.name}" class="building-icon">
-                        <div class="building-info">
-                            <h3>${b.name}</h3>
-                            <p class="building-cost">
-                                <img src="pervitin_icon.png" class="cost-icon"> ${formatNumber(cost)}
-                            </p>
-                            <p>${b.description || ''}</p>
-                        </div>
-                        <div class="building-owned">${b.owned > 0 ? '✔️' : 'BUY'}</div>
-                    `;
-                } else {
-                    buildingHTML = `
-                        <img src="${b.icon}" alt="${b.name}" class="building-icon">
-                        <div class="building-info">
-                            <h3>${b.name}</h3>
-                            <p class="building-cost">
-                                <img src="pervitin_icon.png" class="cost-icon"> ${formatNumber(cost)}
-                            </p>
-                            <p>+${formatNumber(b.pps)} PPS</p>
-                        </div>
-                        <div class="building-owned">${b.owned}</div>
-                    `;
-                }
-                buildingDiv.innerHTML = buildingHTML;
-
-                if ((b.type === 'special' && b.owned > 0) || (b.name === "The Tallest" && b.owned >= 100)) { // Example of a cap
-                     buildingDiv.classList.add('disabled');
-                } else {
-                    buildingDiv.addEventListener('click', () => buyBuilding(b.id));
-                }
-                storeEl.appendChild(buildingDiv);
-            }
-        });
-        updateStore(); // To set initial affordable status
-    }
-
-    function updateStore() {
-        buildings.forEach(b => {
-            if (b.unlocked) {
-                const buildingEl = document.getElementById(`building-${b.id}`);
-                if (!buildingEl) return;
-                
-                const affordable = gameState.pervitins >= calculateCost(b);
-                buildingEl.classList.toggle('affordable', affordable && !buildingEl.classList.contains('disabled'));
-
-                if (b.type !== 'special') {
-                    const costEl = buildingEl.querySelector('.building-cost');
-                    costEl.innerHTML = `<img src="pervitin_icon.png" class="cost-icon"> ${formatNumber(calculateCost(b))}`;
-                    
-                    const ownedEl = buildingEl.querySelector('.building-owned');
-                    ownedEl.textContent = b.owned;
-                }
-            }
-        });
-    }
-
-    function unlockBuildings() {
-        let unlockedNew = false;
-        buildings.forEach(b => {
-            if (!b.unlocked && gameState.pervitins >= b.baseCost * 0.75) {
-                b.unlocked = true;
-                unlockedNew = true;
-            }
-        });
-        if (unlockedNew) {
-            renderStore();
-        }
-    }
-
-    function buyBuilding(id) {
-        const building = buildings.find(b => b.id === id);
-        const cost = calculateCost(building);
-
-        if (gameState.pervitins >= cost) {
-            if (building.type === 'special') {
-                if (building.owned > 0) {
-                    playSound('error.mp3');
-                    return; // Already bought
-                }
-                playSound('buy.mp3');
-                gameState.pervitins -= cost;
-                building.owned = 1;
-                if (building.actionName && typeof actions[building.actionName] === 'function') {
-                    actions[building.actionName]();
-                }
-                renderStore(); // Re-render to show it as bought
-                updateDisplay();
+function updateUpgradesUI() {
+    upgrades.forEach((upgrade, index) => {
+        const cost = calculateCost(upgrade);
+        const el = document.getElementById(`upgrade-${index}`);
+        if (el) {
+            el.querySelector('.cost').textContent = formatNumber(cost);
+            el.querySelector('.count').textContent = upgrade.count;
+            if (score < cost) {
+                el.classList.add('disabled');
             } else {
-                playSound('buy.mp3');
-                gameState.pervitins -= cost;
-                building.owned++;
-                gameState.pervitinsPerSecond += building.pps;
-                updateDisplay();
+                el.classList.remove('disabled');
             }
-        } else {
-            playSound('error.mp3');
         }
+    });
+}
+
+function updateSlotsUI() {
+    const spinBtn = document.getElementById('slot-btn');
+    if (spinBtn) spinBtn.disabled = score < 100;
+
+    const superSpinBtn = document.getElementById('super-slot-btn');
+    if (superSpinBtn) superSpinBtn.disabled = score < 10000;
+}
+
+// --- SHOP/UPGRADES ---
+function generateShop() {
+    upgradesGrid.innerHTML = '';
+    upgrades.forEach((upgrade, index) => {
+        const cost = calculateCost(upgrade);
+        const upgradeEl = document.createElement('div');
+        upgradeEl.className = 'upgrade';
+        upgradeEl.id = `upgrade-${index}`;
+        upgradeEl.innerHTML = `
+            <img src="${upgrade.icon}" alt="${upgrade.name}">
+            <h4>${upgrade.name}</h4>
+            <p>Cost: <span class="cost">${formatNumber(cost)}</span></p>
+            <p>Owned: <span class="count">${upgrade.count}</span></p>
+        `;
+        upgradeEl.addEventListener('click', () => buyUpgrade(index));
+        upgradesGrid.appendChild(upgradeEl);
+    });
+}
+
+// --- SLOT MACHINES ---
+function generateSlotMachine(container, idPrefix, title, cost, spinFn, icons) {
+    container.innerHTML = `
+        <div class="slot-machine">
+            <h3>${title}</h3>
+            <div class="slots-display">
+                <img src="${icons[0]}" id="${idPrefix}1" class="slot-img">
+                <img src="${icons[1]}" id="${idPrefix}2" class="slot-img">
+                <img src="${icons[2]}" id="${idPrefix}3" class="slot-img">
+            </div>
+            <button id="${idPrefix}-btn">Spin (${formatNumber(cost)})</button>
+            <p class="slots-result" id="${idPrefix}-result"></p>
+        </div>
+    `;
+    document.getElementById(`${idPrefix}-btn`).addEventListener('click', spinFn);
+}
+
+const slotIcons = ['gir.png', 'minimoose.png', 'rubber_pig.png', 'zim_head.png'];
+const superSlotIcons = ['the_tallest.png', 'voot_cruiser.png', 'irken_armada.png', 'nuke.png'];
+
+async function spinSlots(cost, idPrefix, icons, resultEl, winMultipliers) {
+    if (score < cost) {
+        playSound('fail');
+        return;
     }
-    
-    function showFloatingText(x, y) {
-        const textEl = document.createElement('div');
-        textEl.className = 'floating-text';
-        textEl.textContent = `+${formatNumber(gameState.pervitinsPerClick)}`;
-        
-        // Position relative to the clicker element's parent for better consistency
-        const parentRect = zimClickerEl.parentElement.getBoundingClientRect();
-        textEl.style.left = `${x - parentRect.left}px`;
-        textEl.style.top = `${y - parentRect.top - 20}px`; // Start slightly above the click position
+    score -= cost;
+    playSound('slots_spin');
 
-        zimClickerEl.parentElement.appendChild(textEl);
+    const btn = document.getElementById(`${idPrefix}-btn`);
+    btn.disabled = true;
 
-        setTimeout(() => {
-            textEl.remove();
-        }, 1000);
-    }
-
-    function handleZimClick(event) {
-        playSound('click.mp3');
-        gameState.pervitins += gameState.pervitinsPerClick;
-        showFloatingText(event.clientX, event.clientY);
-        updateDisplay();
-    }
-
-    function changeFlavorText() {
-        const newFlavor = flavorTexts[Math.floor(Math.random() * flavorTexts.length)];
-        flavorTextEl.textContent = newFlavor;
-    }
-    
-    function saveGame() {
-        const savedState = {
-            ...gameState,
-            buildings: buildings.map(b => ({ id: b.id, owned: b.owned, unlocked: b.unlocked }))
-        };
-        localStorage.setItem('zimClickerSave', JSON.stringify(savedState));
-        alert("Your pathetic progress has been saved!");
-    }
-
-    function loadGame() {
-        const savedStateJSON = localStorage.getItem('zimClickerSave');
-        if (savedStateJSON) {
-            const savedState = JSON.parse(savedStateJSON);
-            
-            gameState.pervitins = savedState.pervitins;
-            gameState.pervitinsPerClick = savedState.pervitinsPerClick;
-
-            let totalPPS = 0;
-            savedState.buildings.forEach(savedBuilding => {
-                const gameBuilding = buildings.find(b => b.id === savedBuilding.id);
-                if (gameBuilding) {
-                    gameBuilding.owned = savedBuilding.owned;
-                    gameBuilding.unlocked = savedBuilding.unlocked;
-                    if (gameBuilding.type === 'special' && gameBuilding.owned > 0) {
-                        if (gameBuilding.actionName && typeof actions[gameBuilding.actionName] === 'function') {
-                           actions[gameBuilding.actionName]();
-                        }
-                    } else if (gameBuilding.pps) {
-                        totalPPS += gameBuilding.owned * gameBuilding.pps;
-                    }
-                }
-            });
-            gameState.pervitinsPerSecond = totalPPS;
-            
-            renderStore();
-            updateDisplay();
-            alert("progress restored");
-        } else {
-            alert("no progress found");
-        }
-    }
-    
-    function resetGame() {
-        if (confirm("btw this resets everything")) {
-            localStorage.removeItem('zimClickerSave');
-            window.location.reload();
-        }
-    }
-
-    function gameLoop() {
-        gameState.pervitins += gameState.pervitinsPerSecond / 10; // Update 10 times per second
-        unlockBuildings();
-        updateDisplay();
-        spinButton.disabled = gameState.pervitins < spinCost;
-    }
-
-    // COSMETIC UPGRADE FUNCTIONS
-    function pinWalterToScreen() {
-        if (document.getElementById('walter-white-pinned')) return;
-        
-        const walter = document.createElement('img');
-        walter.id = 'walter-white-pinned';
-        walter.src = 'walter_white.png';
-        walter.alt = 'A mysterious chemist';
-        walter.style.left = '10vw';
-        walter.style.top = '50vh';
-        
-        document.body.appendChild(walter);
-        
-        let isDragging = false;
-        let offsetX, offsetY;
-
-        const startDrag = (e) => {
-            isDragging = true;
-            const event = e.touches ? e.touches[0] : e;
-            offsetX = event.clientX - walter.offsetLeft;
-            offsetY = event.clientY - walter.offsetTop;
-            walter.style.cursor = 'grabbing';
-            e.preventDefault();
-        };
-
-        const drag = (e) => {
-            if (isDragging) {
-                const event = e.touches ? e.touches[0] : e;
-                walter.style.left = `${event.clientX - offsetX}px`;
-                walter.style.top = `${event.clientY - offsetY}px`;
-            }
-        };
-
-        const endDrag = () => {
-            isDragging = false;
-            walter.style.cursor = 'grab';
-        };
-
-        walter.addEventListener('mousedown', startDrag);
-        document.addEventListener('mousemove', drag);
-        document.addEventListener('mouseup', endDrag);
-
-        walter.addEventListener('touchstart', startDrag);
-        document.addEventListener('touchmove', drag);
-        document.addEventListener('touchend', endDrag);
-    }
-
-    function startSpawningZombies() {
-        if (window.zombieInterval) return;
-
-        window.zombieInterval = setInterval(() => {
-            const zombie = document.createElement('img');
-            zombie.src = 'zombie.png';
-            zombie.className = 'wandering-zombie';
-            zombie.style.bottom = `${Math.random() * 20 + 5}%`; // Randomize height
-            
-            if (Math.random() > 0.5) {
-                zombie.style.transform = 'scaleX(-1)'; // Flip direction
-            }
-            
-            document.body.appendChild(zombie);
-            
-            setTimeout(() => {
-                zombie.remove();
-            }, 15000); // Corresponds to animation duration in CSS
-        }, 8000); // Spawn every 8 seconds
-    }
-
-    const actions = { pinWalterToScreen, startSpawningZombies };
-
-    // SLOTS LOGIC
-    const spinCost = 1000;
-    const slotSymbols = [
-        { icon: 'rubber_pig.png', weight: 40, payout: 2 }, // Common
-        { icon: 'gir.png', weight: 25, payout: 5 },
-        { icon: 'minimoose.png', weight: 15, payout: 25 },
-        { icon: 'voot_cruiser.png', weight: 10, payout: 100 },
-        { icon: 'zim_head.png', weight: 5, payout: 500 }, // Rarest
+    const slots = [
+        document.getElementById(`${idPrefix}1`),
+        document.getElementById(`${idPrefix}2`),
+        document.getElementById(`${idPrefix}3`),
     ];
-    const weightedSymbols = slotSymbols.flatMap(s => Array(s.weight).fill(s));
+    
+    const spinInterval = setInterval(() => {
+        slots.forEach(s => s.src = icons[Math.floor(Math.random() * icons.length)]);
+    }, 100);
 
-    function getRandomSymbol() {
-        return weightedSymbols[Math.floor(Math.random() * weightedSymbols.length)];
-    }
+    setTimeout(() => {
+        clearInterval(spinInterval);
+        const results = [
+            icons[Math.floor(Math.random() * icons.length)],
+            icons[Math.floor(Math.random() * icons.length)],
+            icons[Math.floor(Math.random() * icons.length)],
+        ];
+        slots.forEach((s, i) => s.src = results[i]);
 
-    async function spinSlots() {
-        if (gameState.pervitins < spinCost || spinButton.disabled) {
-            playSound('error.mp3');
-            return;
-        }
-
-        gameState.pervitins -= spinCost;
-        spinButton.disabled = true;
-        slotsResultEl.textContent = '';
-        playSound('slots_spin.mp3');
-
-        // Animate reels
-        reels.forEach(r => r.classList.add('spinning'));
-        let spinInterval = setInterval(() => {
-            reels.forEach(reel => {
-                reel.querySelector('img').src = getRandomSymbol().icon;
-            });
-        }, 50);
-
-        // Stop reels one by one
-        setTimeout(() => {
-            clearInterval(spinInterval);
-            
-            const finalResults = [getRandomSymbol(), getRandomSymbol(), getRandomSymbol()];
-            reels.forEach((reel, i) => {
-                reel.querySelector('img').src = finalResults[i].icon;
-                reel.classList.remove('spinning');
-            });
-
-            checkWin(finalResults);
-            updateDisplay();
-
-        }, 1500); // Spin duration
-    }
-
-    function checkWin(results) {
         let winAmount = 0;
-        let winMessage = "do it again";
+        if (results[0] === results[1] && results[1] === results[2]) {
+            winAmount = cost * winMultipliers.triple;
+            resultEl.textContent = `TRIIIPPLLEEEEEEEE +${formatNumber(winAmount)}!`;
+            playSound('slots_win');
+            confetti({ particleCount: 150, spread: 90, origin: { y: 0.6 }});
+        } else if (results[0] === results[1] || results[1] === results[2] || results[0] === results[2]) {
+            winAmount = cost * winMultipliers.double;
+            resultEl.textContent = `DOUBLE! +${formatNumber(winAmount)}.`;
+            playSound('success');
+        } else {
+            resultEl.textContent = "lmao nothing sucks to be u";
+            playSound('fail');
+        }
+        score += winAmount;
+        updateUI();
+    }, 2000);
+}
 
-        if (results[0].icon === results[1].icon && results[1].icon === results[2].icon) {
-            // Three of a kind
-            winAmount = spinCost * results[0].payout;
-            winMessage = `lets goooo ${formatNumber(winAmount)}!`;
-            playSound('slots_win.mp3');
-        } else if (results[0].icon === results[1].icon || results[1].icon === results[2].icon) {
-            // Two of a kind (adjacent)
-            const matchedSymbol = results[0].icon === results[1].icon ? results[0] : results[1];
-            winAmount = spinCost * (matchedSymbol.payout / 4);
-            winMessage = `nice, u got ${formatNumber(Math.floor(winAmount))}!`;
-        }
-        
-        if (winAmount > 0) {
-            gameState.pervitins += winAmount;
-        }
-        slotsResultEl.textContent = winMessage;
+// --- SAVE/LOAD ---
+function saveGame() {
+    const gameState = {
+        score,
+        upgrades: upgrades.map(u => ({ count: u.count }))
+    };
+    localStorage.setItem('zimClickerSave', JSON.stringify(gameState));
+    saveButton.textContent = 'Saved!';
+    setTimeout(() => { saveButton.textContent = 'Save Progress'; }, 1500);
+}
+
+function loadGame() {
+    const savedState = localStorage.getItem('zimClickerSave');
+    if (savedState) {
+        const gameState = JSON.parse(savedState);
+        score = gameState.score;
+        gameState.upgrades.forEach((savedUpgrade, index) => {
+            if (upgrades[index]) {
+                upgrades[index].count = savedUpgrade.count;
+            }
+        });
+        return true;
     }
-    
-    function init() {
-        zimClickerEl.addEventListener('click', handleZimClick);
-        saveButton.addEventListener('click', saveGame);
-        loadButton.addEventListener('click', loadGame);
-        resetButton.addEventListener('click', resetGame);
-        spinButton.addEventListener('click', spinSlots);
-        
-        spinCostText.textContent = `Cost: ${formatNumber(spinCost)} Pervitins`;
-        loadGame(); // Try to load game on start
-        renderStore();
-        updateDisplay();
-        setInterval(gameLoop, 100);
-        setInterval(changeFlavorText, 5000);
+    return false;
+}
+
+function resetGame() {
+    if (confirm("btw this resets everything mfer")) {
+        localStorage.removeItem('zimClickerSave');
+        score = 0;
+        perSecond = 0;
+        upgrades.forEach(u => u.count = 0);
+        recalculatePPS();
+        updateUI();
     }
+}
+
+// --- INITIALIZATION ---
+function init() {
+    loadGame();
+    recalculatePPS();
+    generateShop();
+    generateSlotMachine(slotMachineContainer, 'slot', "baby slots", 100, 
+        () => spinSlots(100, 'slot', slotIcons, document.getElementById('slot-result'), {triple: 20, double: 3}), 
+        slotIcons);
+    generateSlotMachine(slotMachine2Container, 'super-slot', "the big boi", 10000, 
+        () => spinSlots(10000, 'super-slot', superSlotIcons, document.getElementById('super-slot-result'), {triple: 50, double: 5}), 
+        superSlotIcons);
+
+    clickerImage.addEventListener('click', clickAction);
+    resetButton.addEventListener('click', resetGame);
+    saveButton.addEventListener('click', saveGame);
+    loadButton.addEventListener('click', () => {
+        if (loadGame()) {
+            recalculatePPS();
+            updateUI();
+            loadButton.textContent = 'Loaded!';
+        } else {
+            loadButton.textContent = 'No Save Found';
+        }
+        setTimeout(() => { loadButton.textContent = 'Load Progress'; }, 1500);
+    });
     
-    startButton.addEventListener('click', async () => {
-        loadingScreen.style.display = 'none';
-        gameContainer.classList.remove('hidden');
-        gameContainer.style.display = 'grid'; // because hidden has display: none !important maybe
-        
-        await setupAudio();
-        playSound('background-music.mp3', true);
-        init();
-    }, { once: true });
-});
+    setInterval(gameLoop, 100);
+    setInterval(saveGame, 30000);
+
+    updateUI();
+}
+
+startButton.addEventListener('click', () => {
+    loadingScreen.classList.add('hidden');
+    gameContainer.classList.remove('hidden');
+    initAudio();
+    loadSound('click', 'click.mp3');
+    loadSound('buy', 'buy.mp3');
+    loadSound('fail', 'fail.mp3');
+    loadSound('slots_spin', 'slots_spin.mp3');
+    loadSound('slots_win', 'slots_win.mp3');
+    loadSound('success', 'success.mp3');
+}, { once: true });
+
+
+document.addEventListener('DOMContentLoaded', init);
