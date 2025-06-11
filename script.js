@@ -229,7 +229,7 @@ async function spinSlots(cost, idPrefix, icons, resultEl, winMultipliers) {
         let winAmount = 0;
         if (results[0] === results[1] && results[1] === results[2]) {
             winAmount = cost * winMultipliers.triple;
-            resultEl.textContent = `TRIIIPPLLEEEEEEEE +${formatNumber(winAmount)}!`;
+            resultEl.textContent = `TRIPLE WIN! +${formatNumber(winAmount)}!`;
             playSound('slots_win');
             confetti({ particleCount: 150, spread: 90, origin: { y: 0.6 }});
         } else if (results[0] === results[1] || results[1] === results[2] || results[0] === results[2]) {
@@ -237,7 +237,7 @@ async function spinSlots(cost, idPrefix, icons, resultEl, winMultipliers) {
             resultEl.textContent = `DOUBLE! +${formatNumber(winAmount)}.`;
             playSound('success');
         } else {
-            resultEl.textContent = "lmao nothing sucks to be u";
+            resultEl.textContent = "DEFEAT! Nothing for you!";
             playSound('fail');
         }
         score += winAmount;
@@ -272,7 +272,7 @@ function loadGame() {
 }
 
 function resetGame() {
-    if (confirm("btw this resets everything mfer")) {
+    if (confirm("Are you sure you want to erase all your glorious progress for the Irken Empire?")) {
         localStorage.removeItem('zimClickerSave');
         score = 0;
         perSecond = 0;
@@ -287,10 +287,10 @@ function init() {
     loadGame();
     recalculatePPS();
     generateShop();
-    generateSlotMachine(slotMachineContainer, 'slot', "baby slots", 100, 
+    generateSlotMachine(slotMachineContainer, 'slot', "GIR's Slots", 100, 
         () => spinSlots(100, 'slot', slotIcons, document.getElementById('slot-result'), {triple: 20, double: 3}), 
         slotIcons);
-    generateSlotMachine(slotMachine2Container, 'super-slot', "the big boi", 10000, 
+    generateSlotMachine(slotMachine2Container, 'super-slot', "SUPER SLOTS OF DOOM!", 10000, 
         () => spinSlots(10000, 'super-slot', superSlotIcons, document.getElementById('super-slot-result'), {triple: 50, double: 5}), 
         superSlotIcons);
 
