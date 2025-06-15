@@ -1,0 +1,263 @@
+window.addEventListener('message', (event) => {
+    if (event.data.type === 'fileSystem') {
+        /* TODO: What about the case where the file is not a js file?
+            - css
+            - ts
+            - jsx
+            - tsx
+            - html
+            - json
+            - ?
+        */
+        const blobURLMap = {};
+        const blobToFileMap = {};
+
+        const importMap = {
+            imports: Object.fromEntries(
+                event.data.files.map((file) => {
+                    var transformedCode = Babel.transform(file.content.trim(), {
+                        presets: ['react'],
+                    }).code;
+                    const blob = new Blob([transformedCode], { type: getContentType(file.name) });
+                    const blobURL = URL.createObjectURL(blob);
+                    blobURLMap[file.name] = blobURL;
+                    blobToFileMap[blobURL] = file.name;
+
+                    return [file.name.replace('.jsx', '').replace('.js', ''), blobURL];
+                }),
+            ),
+        };
+
+        window.__blobToFileMap = blobToFileMap;
+
+        importMap.imports['three'] = 'https://esm.sh/three@0.161.0?dev';
+        importMap.imports['three/'] = 'https://esm.sh/three@0.161.0&dev/';
+        importMap.imports['react'] = 'https://esm.sh/react@18.3.1?dev';
+        importMap.imports['react/'] = 'https://esm.sh/react@18.3.1&dev/';
+        importMap.imports['react-dom'] = 'https://esm.sh/react-dom@18.3.1?dev';
+        importMap.imports['react-dom/'] = 'https://esm.sh/react-dom@18.3.1&dev/';
+
+        // react-three ecosystem
+        importMap.imports['@react-three/fiber'] =
+            'https://esm.sh/@react-three/fiber@8.13.0?dev&external=react,react-dom,three';
+
+        importMap.imports['@react-three/fiber/'] =
+            'https://esm.sh/@react-three/fiber@8.13.0&dev&external=react,react-dom,three/';
+
+        importMap.imports['@react-three/drei'] =
+            'https://esm.sh/@react-three/drei@9.92.7?dev&external=react,react-dom,three,@react-three/fiber,maath,@use-gesture/react,@react-spring';
+
+        importMap.imports['@react-three/postprocessing'] =
+            'https://esm.sh/@react-three/postprocessing@2.19.1?dev&external=react,react-dom,three,@react-three/fiber,maath,postprocessing';
+
+        importMap.imports['postprocessing'] = 'https://esm.sh/postprocessing@6.37.1?dev&external=three';
+        importMap.imports['postprocessing/'] = 'https://esm.sh/postprocessing@6.37.1&dev&external=three/';
+
+        importMap.imports['@react-three/flex'] =
+            'https://esm.sh/@react-three/flex@1.0.0?dev&external=react,three,@react-three/fiber';
+
+        importMap.imports['@react-three/xr'] =
+            'https://esm.sh/@react-three/xr@6.6.9?dev&external=react,react-dom,three,@react-three/fiber';
+
+        importMap.imports['@react-three/cannon'] =
+            'https://esm.sh/@react-three/cannon@6.6.0?dev&external=react,three,@react-three/fiber';
+
+        importMap.imports['@react-three/rapier'] =
+            'https://esm.sh/@react-three/rapier@1.5.0?dev&external=react,three,@react-three/fiber';
+
+        importMap.imports['@react-three/a11y'] =
+            'https://esm.sh/@react-three/a11y@3.0.0?dev&external=react,react-dom,three,@react-three/fiber';
+
+        importMap.imports['react-spring'] = 'https://esm.sh/react-spring@9.7.3?dev&external=react';
+        importMap.imports['react-spring/'] = 'https://esm.sh/react-spring@9.7.3&dev&external=react/';
+        importMap.imports['@react-spring'] = 'https://esm.sh/react-spring@9.7.3?dev&external=react';
+        importMap.imports['@react-spring/'] = 'https://esm.sh/react-spring@9.7.3&dev&external=react/';
+        importMap.imports['framer-motion'] = 'https://esm.sh/framer-motion@12.5.0?dev&external=react,react-dom';
+        importMap.imports['framer-motion/'] = 'https://esm.sh/framer-motion@12.5.0&dev&external=react,react-dom/';
+        importMap.imports['@use-gesture/react'] = 'https://esm.sh/@use-gesture/react@10.3.0?dev&external=react';
+        importMap.imports['@use-gesture/react/'] = 'https://esm.sh/@use-gesture/react@10.3.0&dev&external=react/';
+        importMap.imports['leva'] = 'https://esm.sh/leva@0.10.0?dev&external=react,react-dom,@use-gesture/react';
+        importMap.imports['maath'] = 'https://esm.sh/maath@0.10.8?dev&external=three';
+        importMap.imports['maath/'] = 'https://esm.sh/maath@0.10.8&dev&external=three/';
+
+        // Create new import map
+        const importMapElement = document.createElement('script');
+        importMapElement.type = 'importmap';
+        importMapElement.textContent = JSON.stringify(importMap);
+        document.head.appendChild(importMapElement);
+
+        // Now load main
+        const mainScript = document.createElement('script');
+        mainScript.type = 'module';
+        const mainJsSrc = blobURLMap['main.js'];
+        const mainJsxSrc = blobURLMap['main.jsx'];
+        if (mainJsSrc) {
+            mainScript.src = mainJsSrc;
+        } else if (mainJsxSrc) {
+            mainScript.src = mainJsxSrc;
+        } else {
+            throw new Error('Neither main.js nor main.jsx found');
+        }
+        document.body.appendChild(mainScript);
+        notifyScriptsLoaded();
+        return; // Don't process further if it's a fileSystem message
+    }
+
+    // Handle Screenshot Request
+    if (event.data && event.data.action === 'requestScreenshot') {
+        // Use requestAnimationFrame to capture the next available frame
+        requestAnimationFrame(() => {
+            let responseContent = null;
+            let canvas = null;
+            const targetQuality = 0.7;
+
+            try {
+                canvas = document.querySelector('canvas');
+                if (canvas) {
+                    responseContent = canvas.toDataURL('image/webp', targetQuality);
+                } else {
+                    console.error('Canvas element not found inside iframe for screenshot.');
+                }
+            } catch (error) {
+                console.error('Error capturing canvas screenshot inside iframe: ', error);
+            }
+
+            // Send the response back to the parent window
+            if (event.source) {
+                event.source.postMessage(
+                    {
+                        action: 'screenshotResponse',
+                        content: responseContent,
+                    },
+                    event.origin,
+                );
+            } else {
+                console.error('Cannot send screenshot response, event.source is null.');
+            }
+        });
+
+        return;
+    }
+});
+
+/**
+ * @typedef {Object} ErrorData
+ * @property {string} message
+ * @property {string} source
+ * @property {number} lineNumber
+ * @property {number} columnNumber
+ * @property {string} stack
+ * @property {string} errorName
+ * @property {string} fullError
+ */
+
+function mapBlobUrlsToFileNames(text) {
+    if (!text || !window.__blobToFileMap) return text;
+
+    let transformedText = text;
+    for (const [blobUrl, fileName] of Object.entries(window.__blobToFileMap)) {
+        transformedText = transformedText.replace(new RegExp(blobUrl, 'g'), fileName);
+    }
+
+    return transformedText;
+}
+
+function mapUrlToFileName(url) {
+    if (!url || !window.__blobToFileMap) return url;
+
+    if (window.__blobToFileMap[url]) {
+        return window.__blobToFileMap[url];
+    }
+
+    for (const [blobUrl, fileName] of Object.entries(window.__blobToFileMap)) {
+        if (url.includes(blobUrl)) {
+            return fileName;
+        }
+    }
+
+    return url;
+}
+
+window.onerror = (message, source, lineno, colno, error) => {
+    const mappedSource = mapUrlToFileName(source);
+    const mappedMessage = mapBlobUrlsToFileNames(message);
+    const mappedStack = error?.stack ? mapBlobUrlsToFileNames(error.stack) : undefined;
+
+    window.parent.postMessage(
+        {
+            action: 'codeError',
+            /** @type {ErrorData} */
+            content: {
+                message: mappedMessage,
+                source: mappedSource,
+                lineNumber: lineno,
+                columnNumber: colno,
+                stack: mappedStack,
+                errorName: error?.name,
+                fullError: error?.toString(),
+            },
+        },
+        '*',
+    );
+};
+
+// Capture runtime errors that window.onerror might miss (e.g., 404 script imports)
+window.addEventListener(
+    'error',
+    /** @param {ErrorEvent} event */
+    (event) => {
+        // If event.error exists this is a normal runtime exception, window.onerror should handle it
+        if (event.error) return;
+        event.preventDefault();
+
+        const source = event.filename || event?.target?.src || event?.target?.href || '';
+        const mappedSource = mapUrlToFileName(source);
+        const message =
+            event.message || `Resource load error: ${event?.target?.src || event?.target?.href || 'Unknown'}`;
+
+        const mappedMessage = mapBlobUrlsToFileNames(message);
+
+        window.parent.postMessage(
+            {
+                action: 'codeError',
+                /** @type {ErrorData} */
+                content: {
+                    message: mappedMessage,
+                    source: mappedSource,
+                    lineNumber: event.lineno || 0,
+                    columnNumber: event.colno || 0,
+                    stack: undefined,
+                    errorName: 'ResourceError',
+                    fullError: event.message || 'Resource failed to load',
+                },
+            },
+            '*',
+        );
+    },
+    true, // capture phase—needed to catch load errors
+);
+
+function getContentType(filePath) {
+    const extension = filePath.split('.').pop()?.toLowerCase();
+    const contentTypes = {
+        html: 'text/html',
+        js: 'application/javascript',
+        jsx: 'application/javascript',
+        css: 'text/css',
+        json: 'application/json',
+        png: 'image/png',
+        jpg: 'image/jpeg',
+        jpeg: 'image/jpeg',
+        gif: 'image/gif',
+        svg: 'image/svg+xml',
+    };
+
+    return contentTypes[extension || ''] || 'text/plain';
+}
+
+/**
+ * Notify the parent window that the scripts have been loaded and send the canvas properties.
+ */
+function notifyScriptsLoaded() {
+    window.parent.postMessage({ action: 'scriptsLoaded' }, '*');
+}

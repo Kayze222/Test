@@ -1,0 +1,1 @@
+(self.__next_s=self.__next_s||[]).push(["https://r.wdfl.co/rw.js",{"async":true,"data-rewardful":"eb25d1"}])
