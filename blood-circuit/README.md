@@ -25,3 +25,5 @@ Serve this folder using any HTTP static server (for example, `python -m http.ser
 ## V4 enemy and art update
 
 Four new active enemies: **Stalker** (teleport warning), **Skitter** (flanking melee), **Chorister** (hovering fan projectile volley), and **Leech** (health-draining melee). New ambient watcher silhouettes, red flickering lights, stained terrain, darker fog and online-sourced CC0 surface textures with offline procedural fallbacks. See `ASSET_CREDITS.md`.
+
+**Playtest milestones:** Skitter starts in wave 3, Stalker in wave 4, Chorister in wave 6 and Leech in wave 8. The optional online-sourced CC0 material maps fall back gracefully when blocked.
