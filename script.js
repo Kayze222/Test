@@ -649,6 +649,16 @@ function initCasino() {
     }
     document.getElementById('coin-head').addEventListener('click', () => flipDivorceCoin('heads'));
     document.getElementById('coin-tail').addEventListener('click', () => flipDivorceCoin('tails'));
+    const wheelFace = document.getElementById('wheel-disc');
+    for (let i = 0; i < wheelPrizes.length; i++) {
+        const label = document.createElement('span');
+        const angle = (i + 0.5) * (360 / wheelPrizes.length);
+        label.className = 'casino-wheel-prize';
+        label.textContent = wheelPrizes[i] + 'x';
+        label.style.transform = 'translate(-50%, -50%) rotate(' + angle +
+            'deg) translateY(-72px) rotate(' + (-angle) + 'deg)';
+        wheelFace.appendChild(label);
+    }
     document.getElementById('wheel-spin').addEventListener('click', spinQuestionableWheel);
     document.getElementById('crash-start').addEventListener('click', startCrash);
     document.getElementById('crash-cashout').addEventListener('click', cashOutCrash);
