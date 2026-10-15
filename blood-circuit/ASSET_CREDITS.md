@@ -17,3 +17,8 @@ procedural textures take over automatically. The game does **not** require
 external textures in order to function. No live API calls are needed.
 
 Texture URLs are openly declared in `arena-textures.js`.
+
+
+## V10 first-person art
+
+The `assets/viewmodels/*.png` sprites in this version are edited crops from the user-supplied reference sheets (pistol, shotgun, heavy gun and Joblez hands). They may incorporate third-party game artwork. Their original licenses have not been verified, and inclusion here does **not** imply a CC0 license. Secure distribution permission before a public or commercial release.

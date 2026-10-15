@@ -1,14 +1,14 @@
-# BLOOD//CIRCUIT - V9 Sprite Viewmodels
+# BLOOD//CIRCUIT - V10 Original Sprite Sheets
 
 Retro 3D arena with classic 2D first-person weapon/hand sprite overlay.
 
 ## Changes
 - Retired the skinned GLB arm viewmodel (and the async GLTF loader) from the render path.
-- Original weapon + hands frames in `assets/viewmodels/`.
+- Original-style weapon and hand frames extracted from the user-supplied pistol, shotgun, heavy-gun and Joblez hand sheets in `assets/viewmodels/`.
 - New `sprite-viewmodel.js` frame system for three weapons, muzzle flash, parry fists and frame-based weapon lowering.
 - Viewmodel is a transparent pixel-art canvas, separate from the WebGL arena, supporting bob, recoil, strafe tilt, slides and switching.
 - Existing combat mechanics, muzzle traces, coins, chests and progression remain unchanged.
-- All original sprites are based on the project's Kenney Blaster Kit 2.1 CC0 models, with newly drawn 2D hand shapes. Reference screenshots were not copied.
+- V10 uses direct crops from user-supplied reference sprite sheets, not the generated Kenney-based V9 art. Third-party source asset redistribution rights have not been verified. Confirm permissions or replace with licensed alternatives before a public commercial release.
 - No runtime remote textures or image CDN dependencies.
 
 ## Run
