@@ -3,6 +3,7 @@ import {CombatFX,starGeometry} from './combat-fx.js';
 import {RetroRenderer} from './retro-renderer.js';
 import {surface} from './arena-textures.js';
 import {sourcedModel} from './sourced-models.js';
+import {SpriteViewmodel} from './sprite-viewmodel.js';
 export {T};
 const geometries={box:new T.BoxGeometry(1,1,1),sphere:new T.IcosahedronGeometry(1,0),oct:new T.OctahedronGeometry(1),cyl:new T.CylinderGeometry(1,1,1,8),cone:new T.ConeGeometry(1,1,5),ring:new T.TorusGeometry(1,.025,4,64),plane:new T.PlaneGeometry(1,1)};
 const mats=new Map();
@@ -14,7 +15,7 @@ export class World{
  this.scene=new T.Scene();this.scene.fog=new T.Fog(0x100d13,21,121);this.camera=new T.PerspectiveCamera(88,innerWidth/innerHeight,.06,210);this.camera.rotation.order='YXZ';this.scene.add(this.camera);
  this.scene.add(new T.HemisphereLight(0x8595a9,0x19070b,1.05));const dl=new T.DirectionalLight(0xc7d4cb,1.55);dl.position.set(5,20,10);this.scene.add(dl);const dl2=new T.DirectionalLight(0xa80e2e,1.85);dl2.position.set(-15,8,-20);this.scene.add(dl2);
  this.post=new RetroRenderer(this.renderer);this.viewScene=new T.Scene();this.viewCamera=new T.PerspectiveCamera(65,innerWidth/innerHeight,.02,8);this.viewScene.add(this.viewCamera);this.viewScene.add(new T.HemisphereLight(0xc5d7ff,0x281324,2.5));const weaponLight=new T.DirectionalLight(0xffe4c6,2.7);weaponLight.position.set(-1,2,2);this.viewScene.add(weaponLight);this.muzzleLight=new T.PointLight(0xffd579,0,4,2);this.viewScene.add(this.muzzleLight);this.effects=new CombatFX(this.scene,this.camera);this.reduced=false;this.muzzleTime=0;this.swapTime=0;this.activeWeapon=0;this.time=0;
- this.limit=51.6;this.flickerLights=[];this.watchers=[];this.colliders=[];this.ramps=[];this.pads=[{x:-19,z:9},{x:19,z:-9},{x:-39,z:-25},{x:39,z:25}];this.chests=[];this.fx=[];this.decals=[];this.buildArena();this.buildWeapons();this.loadRiggedArms();
+ this.limit=51.6;this.flickerLights=[];this.watchers=[];this.colliders=[];this.ramps=[];this.pads=[{x:-19,z:9},{x:19,z:-9},{x:-39,z:-25},{x:39,z:25}];this.chests=[];this.fx=[];this.decals=[];this.buildArena();this.buildWeapons();this.sprite=new SpriteViewmodel();this.parrySpriteWas=false;
  window.addEventListener('resize',()=>{this.camera.aspect=innerWidth/innerHeight;this.camera.updateProjectionMatrix();this.renderer.setSize(innerWidth,innerHeight);this.viewCamera.aspect=innerWidth/innerHeight;this.viewCamera.updateProjectionMatrix();this.post.resize(innerWidth,innerHeight)})
  }
  add(shape,color,x,y,z,sx,sy,sz,glow=false,parent=this.scene){const m=mesh(shape,color,x,y,z,sx,sy,sz,glow);parent.add(m);return m}
@@ -176,156 +177,22 @@ export class World{
  const proxy=new T.Group();g.add(proxy);g.userData.handProxy=proxy;
  this.add('box',0x687e99,.025,-.28,.3,.23,.13,.28,false,proxy);this.add('box',0x253d69,.03,-.31,.48,.25,.22,.42,false,proxy);this.add('box',0x4f78b7,.03,-.19,.48,.22,.035,.3,false,proxy);
  g.userData.muzzle=new T.Vector3(0,.02,type===0?-.85:type===1?-1.04:-1.22);const flash=new T.Group();flash.position.copy(g.userData.muzzle);for(const [color,size,angle] of [[accent,.27,0],[0xfff6b3,.19,.4],[0xffffff,.1,0]]){const m=new T.Mesh(starGeometry(),new T.MeshBasicMaterial({color,transparent:true,blending:T.AdditiveBlending,depthWrite:false,side:T.DoubleSide}));m.scale.setScalar(size);m.rotation.z=angle;flash.add(m)}flash.visible=false;g.add(flash);g.userData.flash=flash;this.guns.push(g)}
- // The actual skinned GLB is mounted separately in view-camera space and animated.
- // Keep the simple proxy until the asynchronous rig finishes loading.
- this.armFrame=new T.Group();this.gunRoot.add(this.armFrame);this.armFrame.visible=false;
- this.armRig=null;this.armMixer=null;this.armActions=new Map();this.armCurrent=null;
- this.armOneShot=false;this.armWeapon=-1;this.armParryWas=false;this.armShootTime=0;this.armJoints=null;
- this.fist=new T.Group();this.viewCamera.add(this.fist);this.add('box',0x4a5552,0,0,0,.26,.22,.4,false,this.fist);this.add('box',0xe8ab78,0,.06,-.24,.3,.2,.15,false,this.fist);this.add('box',0xf2dbb0,0,.16,-.2,.29,.04,.2,false,this.fist);this.fist.visible=false;
+ this.gunRoot.visible=false;
  }
- async loadRiggedArms(){
-  try{
-   // Defer the optional loader so an asset error cannot prevent the game booting.
-   const {GLTFLoader}=await import('./vendor/GLTFLoader.js');
-   const gltf=await new GLTFLoader().loadAsync('./assets/models/arms_rig.glb');
-   if(!gltf.scene||!gltf.animations?.length)throw new Error('Arm rig/animations are missing');
-   const skinned=[];
-   gltf.scene.traverse(object=>{
-    if(object.isSkinnedMesh){
-     object.frustumCulled=false;
-     skinned.push(object);
-     const materials=Array.isArray(object.material)?object.material:[object.material];
-     for(const material of materials){
-      material.side=T.DoubleSide;
-      material.roughness=1;
-      material.metalness=0;
-      material.flatShading=true;
-      if(material.map){material.map.magFilter=T.NearestFilter;material.map.minFilter=T.NearestMipmapNearestFilter;}
-      material.needsUpdate=true;
-     }
-    }
-   });
-   if(!skinned.length||skinned.some(o=>!o.skeleton?.bones?.length))throw new Error('No bound skinned arm meshes');
-   this.armFrame.add(gltf.scene);
-   this.armRig=gltf.scene;
-   // The source pack is rigged in Blender's upright (+Y) pose, while the
-   // firearm barrels in this viewmodel point along -Z. Rotate the ENTIRE
-   // skinned hierarchy -90 degrees around local X, preserving bones and clips.
-   // Rebase the former 1.6m source height into the camera's viewmodel space.
-   this.armRig.scale.setScalar(.78);
-   this.armRig.rotation.set(-Math.PI/2,0,0);
-   this.armRig.position.set(0,-.20,.78);
-   this.armMixer=new T.AnimationMixer(this.armRig);
-   // Preserve the native skeleton, but use the two wrist chains as IK targets.
-   // These are fixed to the *weapon* parent so both hands follow sway/recoil.
-   const find=(name)=>this.armRig.getObjectByName(name);
-   const trigger=['shoulder.L','upper_arm.L','forearm.L','hand.L'].map(find);
-   const support=['shoulder.R','upper_arm.R','forearm.R','hand.R'].map(find);
-   if(trigger.every(Boolean)&&support.every(Boolean))this.armJoints={trigger,support};
-   else console.warn('[BLOOD//CIRCUIT] Rigged arms: IK unavailable, missing bones');
-   for(const clip of gltf.animations){
-    if(['finger_gun_idle','guard_idle','knife_idle','finger_gun_fire','push.R','knife_hit_01','jab.L','jab.R','guard_draw'].includes(clip.name)){
-     this.armActions.set(clip.name,this.armMixer.clipAction(clip));
-    }
-   }
-   this.armWeapon=-1;
-   this.playArmIdle(0,true);
-   for(const gun of this.guns)if(gun.userData.handProxy)gun.userData.handProxy.visible=false;
-   console.info('[BLOOD//CIRCUIT] Rigged FPS arms loaded:',skinned.length,'mesh(es),',gltf.animations.length,'clips,',skinned[0].skeleton.bones.length,'joints');
-  }catch(error){
-   console.warn('[BLOOD//CIRCUIT] Rigged arm asset failed; using original proxy hands:',error);
-   this.armRig=null;
-   this.armFrame.visible=false;
-   for(const gun of this.guns)if(gun.userData.handProxy)gun.userData.handProxy.visible=true;
-  }
- }
- playArm(name,oneShot=false,instant=false){
-  const action=this.armActions.get(name);
-  if(!action||!this.armMixer)return;
-  if(this.armCurrent===action&&!oneShot)return;
-  const previous=this.armCurrent;
-  action.reset();action.enabled=true;action.setEffectiveWeight(1);
-  action.setLoop(oneShot?T.LoopOnce:T.LoopRepeat,oneShot?1:Infinity);
-  action.clampWhenFinished=oneShot;
-  if(previous&&previous!==action&&!instant){previous.fadeOut(.12);action.fadeIn(.12);}
-  else action.setEffectiveWeight(1);
-  action.play();this.armCurrent=action;this.armOneShot=oneShot;
- }
- playArmIdle(index,instant=false){
-  this.armWeapon=index;
-  this.playArm(index===1?'knife_idle':'guard_idle',false,instant);
- }
- triggerArmStrike(type){
-  if(!this.armRig)return;
-  if(type==='parry')this.playArm('jab.R',true);
-  else this.armShootTime=.13;
- }
- setFX(settings){this.reduced=!!settings.reduced;this.effects.reduced=this.reduced;this.post.uniforms.reduced.value=this.reduced?1:0;this.post.uniforms.vhs.value=settings.crt?1:0}
- fireWeapon(index){this.activeWeapon=index;this.triggerArmStrike('shoot');this.muzzleTime=index===1?.085:index===2?.12:.065;this.guns[index].userData.flash.rotation.z=Math.random()*6.28;this.post.uniforms.impact.value=Math.max(this.post.uniforms.impact.value,index===2?.5:.13)}
+ setFX(settings){this.reduced=!!settings.reduced;this.effects.reduced=this.reduced;this.post.uniforms.reduced.value=this.reduced?1:0;this.post.uniforms.vhs.value=settings.crt?1:0;this.sprite.reduced=this.reduced}
+ fireWeapon(index){this.activeWeapon=index;this.sprite.fire(index);this.muzzleTime=index===1?.085:index===2?.12:.065;this.guns[index].userData.flash.rotation.z=Math.random()*6.28;this.post.uniforms.impact.value=Math.max(this.post.uniforms.impact.value,index===2?.5:.13)}
  muzzlePosition(index){this.viewScene.updateMatrixWorld(true);this.camera.updateMatrixWorld(true);const p=this.guns[index].localToWorld(this.guns[index].userData.muzzle.clone()).applyMatrix4(this.viewCamera.matrixWorldInverse);const view=this.viewCamera.projectionMatrix.elements,world=this.camera.projectionMatrix.elements;p.x*=view[0]/world[0];p.y*=view[5]/world[5];return p.applyMatrix4(this.camera.matrixWorld)}
- // Small analytic CCD solver. Rotates original shoulder/elbow joints and keeps
- // the skinned hand bones attached to the same weapon as the model.
- solveArmGrip(chain,grip){
-  const hand=chain[3];
-  const worldGoal=this.gunRoot.localToWorld(grip.clone());
-  const p=new T.Vector3(),end=new T.Vector3(),a=new T.Vector3(),b=new T.Vector3();
-  const localParent=new T.Quaternion(),delta=new T.Quaternion(),worldDelta=new T.Quaternion();
-  for(let step=0;step<6;step++){
-   for(let j=2;j>=0;j--){
-    const bone=chain[j];
-    bone.getWorldPosition(p);hand.getWorldPosition(end);
-    a.copy(end).sub(p);b.copy(worldGoal).sub(p);
-    if(a.lengthSq()<.000001||b.lengthSq()<.000001)continue;
-    a.normalize();b.normalize();worldDelta.setFromUnitVectors(a,b);
-    bone.parent.getWorldQuaternion(localParent);
-    delta.copy(localParent).invert().multiply(worldDelta).multiply(localParent);
-    bone.quaternion.premultiply(delta).normalize();
-    bone.updateWorldMatrix(false,true);
-   }
-   hand.getWorldPosition(end);
-   if(end.distanceToSquared(worldGoal)<.000035)break;
-  }
- }
- positionRiggedHands(index,parry){
-  if(!this.armRig||!this.armJoints)return;
-  this.gunRoot.updateMatrixWorld(true);
-  // Grip anchors follow the -90 degree rig correction. Keep them close to
-  // the source's natural guard pose: the old targets drove wrists too far
-  // toward the camera, causing inverted elbows and floating forearms.
-  const g=[
-   [[.14,-.05,-.44],[-.16,-.02,-.52]],
-   [[.15,-.05,-.44],[-.20,-.02,-.58]],
-   [[.15,-.04,-.48],[-.22,-.02,-.60]]
-  ][index];
-  this.solveArmGrip(this.armJoints.trigger,new T.Vector3(...g[0]));
-  // The support hand is released briefly for a visible parry strike.
-  if(parry<=0)this.solveArmGrip(this.armJoints.support,new T.Vector3(...g[1]));
- }
  weaponPose(index,time,moving,recoil,parry,slide,strafe=0){
-  if(index!==this.activeWeapon){this.swapTime=.15;this.activeWeapon=index;if(this.armRig)this.playArmIdle(index);}
-  this.gunRoot.visible=true;
-  this.guns.forEach((g,i)=>g.visible=i===index);
+  this.gunRoot.visible=false;
+  if(index!==this.activeWeapon){this.swapTime=.15;this.activeWeapon=index;}
   const swap=this.swapTime/.15,weight=[1,1.3,.8][index];
   this.gunRoot.scale.setScalar(1.04);
   this.gunRoot.position.set(.39+Math.sin(time*10)*moving*.013,-.38+Math.abs(Math.cos(time*10))*moving*.015-(slide?.06:0)-swap*.22,-.65+recoil*.18*weight);
   this.gunRoot.rotation.set(recoil*.15*weight-swap*.25,-recoil*.04,-.045-Math.sin(time*10)*moving*.012+strafe*.02+recoil*.04);
-  const pump=this.guns[index].userData.pump;
-  if(pump)pump.position.z=-.53+Math.sin(Math.min(1,recoil/1.6)*Math.PI)*.18;
-  if(this.armRig){
-   this.armFrame.visible=true;
-   // Camera sway and recoil now belong to the shared gunRoot, not two
-   // independently moving models. Avoid offsets drifting the hands apart.
-   this.armFrame.position.set(0,0,0);
-   this.armFrame.rotation.set(0,0,0);
-   if(this.armWeapon!==index&&!this.armOneShot)this.playArmIdle(index);
-   if(parry>0&&!this.armParryWas)this.triggerArmStrike('parry');
-   this.armParryWas=parry>0;
-   this.positionRiggedHands(index,parry);
-  }
-  this.fist.visible=parry>0&&!this.armRig;
-  if(this.fist.visible){const v=Math.sin(Math.min(1,parry/.35)*Math.PI);this.fist.position.set(-.4,-.33+v*.17,-.7-v*.44);this.fist.rotation.set(-.2-v*.3,0,-v*.2);}
+  if(parry>0&&!this.parrySpriteWas)this.sprite.parry();
+  this.parrySpriteWas=parry>0;
+  this.sprite.pose(index,time,moving,recoil,parry,slide,strafe);
  }
-
  tracer(from,to,color=0xffefb0,width=.025,duration=.085){return this.effects.beam(from,to,color,width,duration)}
  burst(pos,color,count=10,power=5){this.effects.burst(pos,color,count,power)}
  blood(pos){this.effects.blood(pos)}
@@ -334,8 +201,8 @@ export class World{
  hitEnemy(e){e.mesh.userData.flashUntil=this.time+.065}
  parryBurst(pos){this.effects.parry(pos);this.post.uniforms.impact.value=1}
  explosion(pos,color=0xff5428,size=1){this.effects.explosion(pos,color,size);this.post.uniforms.impact.value=Math.max(this.post.uniforms.impact.value,.7)}
- updateFx(dt,time){this.time=time;if(this.armMixer){this.armMixer.update(dt);this.armShootTime=Math.max(0,this.armShootTime-dt);if(this.armOneShot&&this.armCurrent&&this.armCurrent.time>=this.armCurrent.getClip().duration-.09){this.playArmIdle(this.armWeapon<0?0:this.armWeapon);}}this.reactor.rotation.y=time*.15;this.reactor.position.y=12+Math.sin(time*.8)*.25;for(let m of this.ambient){m.position.y+=dt*.3;if(m.position.y>22)m.position.y=0}for(const w of this.watchers){w.face.rotation.y=Math.sin(time*.4+w.phase)*.25;}for(const {light,phase} of this.flickerLights)light.intensity=.8+.36*Math.sin(time*1.6+phase)+.35*Math.sin(time*8.3+phase*2);for(const c of this.chests){c.mesh.children.at(-1).rotation.y=time;c.mesh.children.at(-1).position.y=1.7+Math.sin(time*2)*.12;c.mesh.visible=c.cooldown<=0;c.cooldown=Math.max(0,c.cooldown-dt)}this.effects.update(dt);this.muzzleTime=Math.max(0,this.muzzleTime-dt);this.swapTime=Math.max(0,this.swapTime-dt);for(let i=0;i<3;i++){const f=this.guns[i].userData.flash;f.visible=this.muzzleTime>0&&i===this.activeWeapon;f.scale.setScalar((i===1?1.8:i===2?1.3:1)*(.8+Math.random()*.4))}this.muzzleLight.intensity=this.muzzleTime>0?4:0;this.muzzleLight.position.set(.3,-.2,-1.3);this.post.uniforms.time.value=time;this.post.uniforms.impact.value=Math.max(0,this.post.uniforms.impact.value-dt*4)}
+ updateFx(dt,time){this.time=time;this.reactor.rotation.y=time*.15;this.reactor.position.y=12+Math.sin(time*.8)*.25;for(let m of this.ambient){m.position.y+=dt*.3;if(m.position.y>22)m.position.y=0}for(const w of this.watchers){w.face.rotation.y=Math.sin(time*.4+w.phase)*.25;}for(const {light,phase} of this.flickerLights)light.intensity=.8+.36*Math.sin(time*1.6+phase)+.35*Math.sin(time*8.3+phase*2);for(const c of this.chests){c.mesh.children.at(-1).rotation.y=time;c.mesh.children.at(-1).position.y=1.7+Math.sin(time*2)*.12;c.mesh.visible=c.cooldown<=0;c.cooldown=Math.max(0,c.cooldown-dt)}this.effects.update(dt);this.muzzleTime=Math.max(0,this.muzzleTime-dt);this.swapTime=Math.max(0,this.swapTime-dt);for(let i=0;i<3;i++){const f=this.guns[i].userData.flash;f.visible=this.muzzleTime>0&&i===this.activeWeapon;f.scale.setScalar((i===1?1.8:i===2?1.3:1)*(.8+Math.random()*.4))}this.muzzleLight.intensity=this.muzzleTime>0?4:0;this.muzzleLight.position.set(.3,-.2,-1.3);this.post.uniforms.time.value=time;this.post.uniforms.impact.value=Math.max(0,this.post.uniforms.impact.value-dt*4)}
  clearFx(){this.effects.clear();this.muzzleTime=0;this.muzzleLight.intensity=0;for(const gun of this.guns)gun.userData.flash.visible=false;this.post.uniforms.impact.value=0;this.post.uniforms.damage.value=0;for(const c of this.chests){c.cooldown=0;c.mesh.visible=true}}
- menu(time){this.gunRoot.visible=false;this.armFrame.visible=false;this.fist.visible=false;this.camera.position.set(38+Math.sin(time*.06)*2,13,42);this.camera.lookAt(-10,6,0);this.camera.fov=65;this.camera.updateProjectionMatrix();this.updateFx(.016,time);this.render()}
- render(){this.post.render(this.scene,this.camera,this.viewScene,this.viewCamera,this.gunRoot.visible)}
+ menu(time){this.gunRoot.visible=false;this.sprite.setVisible(false);this.camera.position.set(38+Math.sin(time*.06)*2,13,42);this.camera.lookAt(-10,6,0);this.camera.fov=65;this.camera.updateProjectionMatrix();this.updateFx(.016,time);this.render()}
+ render(){this.post.render(this.scene,this.camera,this.viewScene,this.viewCamera,false)}
 }
