@@ -484,6 +484,7 @@ button:active {
 }
 
 .casino-wheel {
+    position: relative;
     display: grid;
     place-items: center;
     width: 100%;
@@ -504,7 +505,20 @@ button:active {
     transition: transform 1.4s cubic-bezier(.15,.84,.19,1);
 }
 
+.casino-wheel-prize {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    color: #16031b;
+    font: 900 .9em 'Orbitron', sans-serif;
+    text-shadow: 0 0 2px #fff;
+    pointer-events: none;
+}
+
 .casino-wheel-label {
+    position: absolute;
+    z-index: 2;
+    pointer-events: none;
     display: grid;
     place-items: center;
     width: 66px;
