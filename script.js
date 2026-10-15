@@ -211,10 +211,10 @@ function updateUpgradesUI() {
 
 function updateSlotsUI() {
     const spinBtn = document.getElementById('slot-btn');
-    if (spinBtn) spinBtn.disabled = score < 100 || activeSlotSpins.has('slot');
+    if (spinBtn) spinBtn.disabled = score < 100;
 
     const superSpinBtn = document.getElementById('super-slot-btn');
-    if (superSpinBtn) superSpinBtn.disabled = score < 10000 || activeSlotSpins.has('super-slot');
+    if (superSpinBtn) superSpinBtn.disabled = score < 10000;
 }
 
 // --- SHOP/UPGRADES ---
@@ -256,7 +256,6 @@ function generateSlotMachine(container, idPrefix, title, cost, spinFn, icons) {
 // Optimised animated WebP made from the supplied Foxy jumpscare GIF.
 // Bundled with the game - no separate image hosting or CDN required.
 const FOXY_JUMPSCARE_WEBP = 'data:image/webp;base64,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';
-const activeSlotSpins = new Set();
 
 function showFoxyJumpscare() {
     const overlay = document.createElement('div');
@@ -275,19 +274,15 @@ const slotIcons = ['gir.png', 'minimoose.png', 'rubber_pig.png', 'zim_head.png']
 const superSlotIcons = ['the_tallest.png', 'voot_cruiser.png', 'irken_armada.png', 'nuke.png'];
 
 async function spinSlots(cost, idPrefix, icons, resultEl, winMultipliers) {
-    if (activeSlotSpins.has(idPrefix)) return;
     if (score < cost) {
         playSound('fail');
         return;
     }
-    activeSlotSpins.add(idPrefix);
     // Independent 0.1% chance on every paid spin of either slot machine.
     const jumpscareThisSpin = Math.random() < 0.001;
     score -= cost;
+    updateUI(); // Keep affordability accurate while allowing overlapping spins.
     playSound('slots_spin');
-
-    const btn = document.getElementById(`${idPrefix}-btn`);
-    btn.disabled = true;
 
     const slots = [
         document.getElementById(`${idPrefix}1`),
@@ -323,7 +318,6 @@ async function spinSlots(cost, idPrefix, icons, resultEl, winMultipliers) {
             playSound('fail');
         }
         score += winAmount;
-        activeSlotSpins.delete(idPrefix);
         updateUI();
         if (jumpscareThisSpin) showFoxyJumpscare();
     }, 2000);
