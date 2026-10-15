@@ -1,6 +1,6 @@
-# BLOOD//CIRCUIT
+# BLOOD//CIRCUIT (V4 UNCANNY)
 
-A static browser FPS. This folder contains the V3 Expanded Arena source, including the embedded VCR OSD Mono font.
+A static browser FPS. This folder contains the V4 Expanded Arena + Uncanny Enemies source, including the embedded VCR OSD Mono font.
 
 ## Deploy on Vercel
 
@@ -10,13 +10,6 @@ A static browser FPS. This folder contains the V3 Expanded Arena source, includi
 4. Deploy. Future pushes to the production branch (`main`) automatically deploy the latest version. Pull requests and other branches can receive preview deployments.
 
 If working with ChatGPT, ask it to push the finished changes to the connected GitHub repository. Publishing files to a ChatGPT Sites project does not automatically update Vercel.
-
-## Live deployment
-
-- **Site:** https://blood-circuit.vercel.app
-- **Vercel project:** `blood-circuit`
-- **Connected source:** `Kayze222/Test`, folder `blood-circuit/`, branch `main`
-- Updates committed to the production branch should deploy automatically. Keep changes inside this folder to avoid touching other Test projects.
 
 ## Run locally
 
@@ -28,3 +21,7 @@ Serve this folder using any HTTP static server (for example, `python -m http.ser
 - Progress is stored in browser localStorage per origin, so localhost, ChatGPT Sites and Vercel saves are separate.
 - Use only project-owned assets and code when republishing.
 - Test playability on the deployed URL; static/JS integrity checks do not substitute for a full WebGL playtest.
+
+## V4 enemy and art update
+
+Four new active enemies: **Stalker** (teleport warning), **Skitter** (flanking melee), **Chorister** (hovering fan projectile volley), and **Leech** (health-draining melee). New ambient watcher silhouettes, red flickering lights, stained terrain, darker fog and online-sourced CC0 surface textures with offline procedural fallbacks. See `ASSET_CREDITS.md`.

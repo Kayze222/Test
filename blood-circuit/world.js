@@ -11,10 +11,10 @@ export function mesh(shape,color,x=0,y=0,z=0,sx=1,sy=1,sz=1,glow=false){const m=
 export class World{
  constructor(container){
  this.renderer=new T.WebGLRenderer({antialias:false,powerPreference:'high-performance'});this.renderer.setPixelRatio(1);this.renderer.setSize(innerWidth,innerHeight);this.renderer.outputColorSpace=T.SRGBColorSpace;this.renderer.setClearColor(0x150b0e);container.appendChild(this.renderer.domElement);this.canvas=this.renderer.domElement;
- this.scene=new T.Scene();this.scene.fog=new T.Fog(0x1d0c11,28,142);this.camera=new T.PerspectiveCamera(88,innerWidth/innerHeight,.06,210);this.camera.rotation.order='YXZ';this.scene.add(this.camera);
- this.scene.add(new T.HemisphereLight(0xaebee8,0x241021,1.6));const dl=new T.DirectionalLight(0xffd3b0,2.0);dl.position.set(5,20,10);this.scene.add(dl);const dl2=new T.DirectionalLight(0xf52b50,2.1);dl2.position.set(-15,8,-20);this.scene.add(dl2);
+ this.scene=new T.Scene();this.scene.fog=new T.Fog(0x100d13,21,121);this.camera=new T.PerspectiveCamera(88,innerWidth/innerHeight,.06,210);this.camera.rotation.order='YXZ';this.scene.add(this.camera);
+ this.scene.add(new T.HemisphereLight(0x8595a9,0x19070b,1.05));const dl=new T.DirectionalLight(0xc7d4cb,1.55);dl.position.set(5,20,10);this.scene.add(dl);const dl2=new T.DirectionalLight(0xa80e2e,1.85);dl2.position.set(-15,8,-20);this.scene.add(dl2);
  this.post=new RetroRenderer(this.renderer);this.viewScene=new T.Scene();this.viewCamera=new T.PerspectiveCamera(65,innerWidth/innerHeight,.02,8);this.viewScene.add(this.viewCamera);this.viewScene.add(new T.HemisphereLight(0xc5d7ff,0x281324,2.5));const weaponLight=new T.DirectionalLight(0xffe4c6,2.7);weaponLight.position.set(-1,2,2);this.viewScene.add(weaponLight);this.muzzleLight=new T.PointLight(0xffd579,0,4,2);this.viewScene.add(this.muzzleLight);this.effects=new CombatFX(this.scene,this.camera);this.reduced=false;this.muzzleTime=0;this.swapTime=0;this.activeWeapon=0;this.time=0;
- this.limit=51.6;this.colliders=[];this.ramps=[];this.pads=[{x:-19,z:9},{x:19,z:-9},{x:-39,z:-25},{x:39,z:25}];this.chests=[];this.fx=[];this.decals=[];this.buildArena();this.buildWeapons();
+ this.limit=51.6;this.flickerLights=[];this.watchers=[];this.colliders=[];this.ramps=[];this.pads=[{x:-19,z:9},{x:19,z:-9},{x:-39,z:-25},{x:39,z:25}];this.chests=[];this.fx=[];this.decals=[];this.buildArena();this.buildWeapons();
  window.addEventListener('resize',()=>{this.camera.aspect=innerWidth/innerHeight;this.camera.updateProjectionMatrix();this.renderer.setSize(innerWidth,innerHeight);this.viewCamera.aspect=innerWidth/innerHeight;this.viewCamera.updateProjectionMatrix();this.post.resize(innerWidth,innerHeight)})
  }
  add(shape,color,x,y,z,sx,sy,sz,glow=false,parent=this.scene){const m=mesh(shape,color,x,y,z,sx,sy,sz,glow);parent.add(m);return m}
@@ -69,7 +69,38 @@ export class World{
  // Distinct side landmarks help orient the player at full running speed.
  for(const side of [-1,1]){const frame=this.box(side*49,10,0,1,20,14,0x3a303a);this.add('box',0xff3947,side*48.45,9,0,.05,13,.3,true);}
 
- this.ambient=[];for(let i=0;i<75;i++){let m=this.add('sphere',0xc34c38,(Math.random()-.5)*105,Math.random()*19,(Math.random()-.5)*105,.018,.06,.018,true);this.ambient.push(m)}
+
+ // Hanging, asymmetrical body casts and sealed observation faces. Kept away
+ // from the center so the arena remains readable during high-speed combat.
+ const pylons=[[-47,-30],[-47,2],[-47,34],[47,-31],[47,4],[47,36],[-30,-48],[0,-49],[30,-48]];
+ for(let i=0;i<pylons.length;i++){
+   const [x,z]=pylons[i],height=8+(i%3)*2;
+   const root=new T.Group();root.position.set(x,0,z);this.scene.add(root);
+   this.add('box',0x0a0a11,0,height*.55,.0,.12,height,.12,false,root);
+   const face=this.add('sphere',0xada8a2,0,height-2.6,-.42,.52,.75,.28,false,root);
+   face.rotation.z=(i%3-1)*.15;
+   this.add('box',0x171014,0,height-4.35,0,.54,2.8,.26,false,root);
+   for(const s of [-1,1]){
+     this.add('box',0x161014,s*.51,height-5.3,0,.16,3.8,.19,false,root).rotation.z=s*.15;
+     this.add('sphere',0x8a181f,s*.16,height-2.63,-.68,.052,.028,.012,true,root);
+   }
+   this.watchers.push({root,face,phase:i*1.9});
+ }
+ // Slow red contamination lighting. Only these few lights update every frame.
+ for(const [x,z] of [[-44,-44],[44,44],[-42,42],[42,-42]]){
+   const light=new T.PointLight(0xb31527,1.5,16,2);
+   light.position.set(x,4.8,z);this.scene.add(light);
+   this.flickerLights.push({light,phase:Math.random()*9});
+   this.add('box',0x9a1025,x,7.6,z,.2,4.4,.2,true);
+ }
+ // Streaked drain covers and red seepage near the outside lanes.
+ for(let i=0;i<24;i++){
+   const x=-45+(i*17)%91,z=-44+(i*29)%89;
+   if(Math.abs(x)<12&&Math.abs(z)<12)continue;
+   const stain=this.add('plane',0x2b070e,x,.015,z,2+(i%4),2.5+(i%3),1);
+   stain.rotation.x=-Math.PI/2;stain.material=new T.MeshBasicMaterial({color:0x23070b,transparent:true,opacity:.44,depthWrite:false,side:T.DoubleSide});
+ }
+ this.ambient=[];for(let i=0;i<75;i++){let m=this.add('sphere',0x813a3a,(Math.random()-.5)*105,Math.random()*19,(Math.random()-.5)*105,.018,.06,.018,true);this.ambient.push(m)}
  }
  makeRamp(x,z,w,d,height,axis,sign){
   const incline=Math.atan2(height,axis==='x'?w:d);
@@ -93,6 +124,40 @@ export class World{
  if(type==='boss'){
  this.add('oct',0x5a272f,0,3.5,0,2.6,3.1,2,false,g);this.add('oct',0xff493e,0,3.5,-1.5,.85,1.2,.5,true,g);for(const s of [-1,1]){this.add('box',0x412b30,s*2.7,3.5,0,1.8,1.6,1.7,false,g);let horn=this.add('cone',0xcab19a,s*2.5,5.8,0,.5,3,.5,false,g);horn.rotation.z=-s*.4;this.add('sphere',0x70ffea,s*3.2,3.1,-.85,.35,.35,.35,true,g)}
  const ring=this.add('ring',0xfc4e37,0,3.5,0,3.6,3.6,3.6,true,g);ring.rotation.x=1.2;g.userData.ring=ring;
+ }else if(type==='stalker'){
+   // Almost-human: disproportionately long arms and a featureless mask.
+   this.add('box',0x242025,0,2.6,0,.54,2.1,.39,false,g);
+   this.add('sphere',0xc3bcb2,0,4.0,-.07,.49,.74,.4,false,g);
+   this.add('box',0x111116,0,3.96,-.478,.37,.055,.025,false,g);
+   for(const side of [-1,1]){
+     this.add('sphere',0xe3e5d7,side*.18,4.04,-.45,.075,.08,.04,true,g);
+     const arm=this.add('box',0x706965,side*.58,1.9,0,.15,2.9,.15,false,g);arm.rotation.z=side*.18;
+     this.add('cone',0x8c7777,side*.92,.4,-.13,.23,.6,.23,false,g).rotation.z=Math.PI;
+     this.add('box',0x332b31,side*.2,.78,0,.19,1.55,.23,false,g);
+   }
+   g.userData.stalkerHead=true;
+ }else if(type==='skitter'){
+   this.add('sphere',0x4a383d,0,.78,0,.95,.32,.9,false,g);
+   this.add('sphere',0xc6b0a6,0,1.05,-.7,.48,.41,.36,false,g);
+   this.add('box',0x9e1723,0,1.08,-1.04,.45,.065,.07,true,g);
+   for(const s of [-1,1])for(let k=0;k<3;k++){
+     const limb=this.add('box',0x77665c,s*(.85+k*.19),.44,(k-1)*.5,.13,.85,.13,false,g);
+     limb.rotation.z=s*(.52+k*.12);
+   }
+ }else if(type==='chorister'){
+   // Hovering inverted chapel bell, unsettling high contrast white "face".
+   this.add('cone',0x484047,0,0,0,1.6,2.8,1.6,false,g).rotation.z=Math.PI;
+   this.add('sphere',0xe2d9cd,0,.55,-.6,.44,.66,.25,false,g);
+   for(const s of [-1,1])this.add('sphere',0xdc183d,s*.19,.57,-.84,.055,.13,.045,true,g);
+   for(const rad of [1.65,1.87]){const halo=this.add('ring',0x9e2d3d,0,1.5,0,rad,rad,rad,true,g);halo.rotation.x=.2;g.userData.halo=halo}
+   for(let k=-2;k<=2;k++)this.add('box',0x6e4c58,k*.39,-1.25,0,.075,2.1-(Math.abs(k)*.28),.075,false,g);
+ }else if(type==='leech'){
+   this.add('sphere',0x674447,0,.9,0,1.12,.64,.84,false,g);
+   this.add('cone',0xbab0a6,0,1.1,-.75,.49,1,.49,false,g).rotation.x=-Math.PI*.42;
+   this.add('sphere',0xb90d22,0,1.03,-1.17,.26,.17,.04,true,g);
+   for(const s of [-1,1])for(let k=0;k<2;k++){
+     const limb=this.add('box',0x78615b,s*.9,.47,(k-.5)*.94,.2,.86,.21,false,g);limb.rotation.z=s*.48;
+   }
  }else if(type==='drone'){
  this.add('oct',0x784d55,0,0,0,1,.65,.8,false,g);this.add('sphere',0x56ead8,0,0,-.65,.22,.22,.16,true,g);for(const s of [-1,1]){let wing=this.add('box',0x3c383e,s*1.1,.12,0,1.1,.1,.4,false,g);wing.rotation.z=s*.28;this.add('box',0xff6048,s*1.45,.1,0,.06,.15,.5,true,g)}
  }else{
@@ -101,8 +166,8 @@ export class World{
  }
  if(type==='runner'||type==='gunner'){for(const side of [-1,1]){const shoulder=this.add('oct',type==='runner'?0xa84354:0x678eaf,side*.62,1.93,0,.44,.34,.38,false,g);shoulder.rotation.z=side*.2;for(let i=0;i<3;i++)this.add('box',0x171d2b,side*.18,1.25+i*.18,-.29,.25,.045,.025,false,g);this.add('box',0x7297b7,side*.28,.52,-.17,.2,.23,.08,false,g)}this.add('box',type==='runner'?0xff523f:0x5affef,0,1.65,-.325,.09,.3,.04,true,g)}
  if(elite){const crown=this.add('oct',0xffdf64,0,type==='boss'?7.6:type==='drone'?2:3.4,0,.34,.45,.34,true,g);crown.userData.eliteCrown=true;this.add('ring',0xffd349,0,type==='boss'?7:type==='drone'?1.5:2.9,0,.65,.65,.65,true,g);}
- const tell=this.add('oct',type==='runner'?0xffe75a:0x5dffe8,0,type==='boss'?6.7:type==='drone'?1.2:3.1,0,.17,.17,.17,true,g);tell.visible=false;g.userData.tell=tell;g.traverse(m=>{if(m.isMesh)m.userData.baseMaterial=m.material});g.userData.type=type;g.userData.phase=Math.random()*6;return g}
- animateEnemy(e,t){const g=e.mesh;g.rotation.y=Math.atan2(e.targetX-g.position.x,e.targetZ-g.position.z)+Math.PI;const u=g.userData;if(u.limbs)u.limbs.forEach((m,i)=>m.rotation.x=Math.sin(t*8+u.phase+(i%2)*Math.PI)*.45);if(u.ring){u.ring.rotation.z=t*.6;g.position.y=Math.sin(t*2)*.15}if(u.tell){u.tell.visible=e.telegraph>0;u.tell.scale.setScalar(.2+Math.max(0,e.telegraph)*.3);u.tell.rotation.z=t*8}if(e.telegraph>0)g.scale.setScalar(1+Math.sin(t*28)*.035);else g.scale.setScalar(1);const hit=(u.flashUntil||0)>t;if(hit!==!!u.flashing){u.flashing=hit;g.traverse(m=>{if(m.isMesh)m.material=hit?mat(0xffffe8,true):m.userData.baseMaterial})}}
+ const tell=this.add('oct',['runner','skitter','leech','stalker'].includes(type)?0xfec7a9:0x5dffe8,0,type==='boss'?6.7:type==='drone'||type==='chorister'?1.6:type==='stalker'?5.1:type==='skitter'||type==='leech'?1.8:3.1,0,.17,.17,.17,true,g);tell.visible=false;g.userData.tell=tell;g.traverse(m=>{if(m.isMesh)m.userData.baseMaterial=m.material});g.userData.type=type;g.userData.phase=Math.random()*6;return g}
+ animateEnemy(e,t){const g=e.mesh;g.rotation.y=Math.atan2(e.targetX-g.position.x,e.targetZ-g.position.z)+Math.PI;const u=g.userData;if(u.limbs)u.limbs.forEach((m,i)=>m.rotation.x=Math.sin(t*8+u.phase+(i%2)*Math.PI)*.45);if(e.type==='stalker'){g.rotation.z=Math.sin(t*2.7+u.phase)*.035;g.position.y=Math.sin(t*1.7+u.phase)*.08;}if(e.type==='skitter')g.rotation.z=Math.sin(t*12+u.phase)*.045;if(e.type==='chorister'){g.rotation.z=Math.sin(t*2+u.phase)*.12;if(u.halo)u.halo.rotation.z=t*.4;}if(e.type==='leech')g.scale.x=1+Math.sin(t*5+u.phase)*.07;if(u.ring){u.ring.rotation.z=t*.6;g.position.y=Math.sin(t*2)*.15}if(u.tell){u.tell.visible=e.telegraph>0;u.tell.scale.setScalar(.2+Math.max(0,e.telegraph)*.3);u.tell.rotation.z=t*8}if(e.telegraph>0)g.scale.setScalar(1+Math.sin(t*28)*.035);else g.scale.setScalar(1);const hit=(u.flashUntil||0)>t;if(hit!==!!u.flashing){u.flashing=hit;g.traverse(m=>{if(m.isMesh)m.material=hit?mat(0xffffe8,true):m.userData.baseMaterial})}}
  projectile(x,y,z,friendly=false){const g=new T.Group();g.position.set(x,y,z);const c=friendly?0xe5ff57:0x65f5e3;g.add(mesh('sphere',c,0,0,0,.23,.23,.23,true));g.add(mesh('oct',0xffffff,0,0,0,.11,.11,.11,true));this.scene.add(g);return g}
  buildWeapons(){this.gunRoot=new T.Group();this.viewCamera.add(this.gunRoot);this.guns=[];
  for(let type=0;type<3;type++){const g=new T.Group();this.gunRoot.add(g);const accent=[0x78b9ff,0xffa054,0x5ae4d4][type];
@@ -124,7 +189,7 @@ export class World{
  hitEnemy(e){e.mesh.userData.flashUntil=this.time+.065}
  parryBurst(pos){this.effects.parry(pos);this.post.uniforms.impact.value=1}
  explosion(pos,color=0xff5428,size=1){this.effects.explosion(pos,color,size);this.post.uniforms.impact.value=Math.max(this.post.uniforms.impact.value,.7)}
- updateFx(dt,time){this.time=time;this.reactor.rotation.y=time*.15;this.reactor.position.y=12+Math.sin(time*.8)*.25;for(let m of this.ambient){m.position.y+=dt*.3;if(m.position.y>22)m.position.y=0}for(const c of this.chests){c.mesh.children.at(-1).rotation.y=time;c.mesh.children.at(-1).position.y=1.7+Math.sin(time*2)*.12;c.mesh.visible=c.cooldown<=0;c.cooldown=Math.max(0,c.cooldown-dt)}this.effects.update(dt);this.muzzleTime=Math.max(0,this.muzzleTime-dt);this.swapTime=Math.max(0,this.swapTime-dt);for(let i=0;i<3;i++){const f=this.guns[i].userData.flash;f.visible=this.muzzleTime>0&&i===this.activeWeapon;f.scale.setScalar((i===1?1.8:i===2?1.3:1)*(.8+Math.random()*.4))}this.muzzleLight.intensity=this.muzzleTime>0?4:0;this.muzzleLight.position.set(.3,-.2,-1.3);this.post.uniforms.time.value=time;this.post.uniforms.impact.value=Math.max(0,this.post.uniforms.impact.value-dt*4)}
+ updateFx(dt,time){this.time=time;this.reactor.rotation.y=time*.15;this.reactor.position.y=12+Math.sin(time*.8)*.25;for(let m of this.ambient){m.position.y+=dt*.3;if(m.position.y>22)m.position.y=0}for(const w of this.watchers){w.face.rotation.y=Math.sin(time*.4+w.phase)*.25;}for(const {light,phase} of this.flickerLights)light.intensity=.8+.36*Math.sin(time*1.6+phase)+.35*Math.sin(time*8.3+phase*2)for(const c of this.chests){c.mesh.children.at(-1).rotation.y=time;c.mesh.children.at(-1).position.y=1.7+Math.sin(time*2)*.12;c.mesh.visible=c.cooldown<=0;c.cooldown=Math.max(0,c.cooldown-dt)}this.effects.update(dt);this.muzzleTime=Math.max(0,this.muzzleTime-dt);this.swapTime=Math.max(0,this.swapTime-dt);for(let i=0;i<3;i++){const f=this.guns[i].userData.flash;f.visible=this.muzzleTime>0&&i===this.activeWeapon;f.scale.setScalar((i===1?1.8:i===2?1.3:1)*(.8+Math.random()*.4))}this.muzzleLight.intensity=this.muzzleTime>0?4:0;this.muzzleLight.position.set(.3,-.2,-1.3);this.post.uniforms.time.value=time;this.post.uniforms.impact.value=Math.max(0,this.post.uniforms.impact.value-dt*4)}
  clearFx(){this.effects.clear();this.muzzleTime=0;this.muzzleLight.intensity=0;for(const gun of this.guns)gun.userData.flash.visible=false;this.post.uniforms.impact.value=0;this.post.uniforms.damage.value=0;for(const c of this.chests){c.cooldown=0;c.mesh.visible=true}}
  menu(time){this.gunRoot.visible=false;this.fist.visible=false;this.camera.position.set(38+Math.sin(time*.06)*2,13,42);this.camera.lookAt(-10,6,0);this.camera.fov=65;this.camera.updateProjectionMatrix();this.updateFx(.016,time);this.render()}
  render(){this.post.render(this.scene,this.camera,this.viewScene,this.viewCamera,this.gunRoot.visible)}
