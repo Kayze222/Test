@@ -63,6 +63,8 @@ function confetti({ particleCount = 150, spread = 90, origin = { y: 0.6 } } = {}
 // --- STATE ---
 let score = 0;
 let perSecond = 0;
+let casinoEpoch = 0;
+const casinoStats = { gambled: 0, bestWin: 0, bonks: 0 };
 
 const upgrades = [
     { name: 'vero slaves', baseCost: 15, pps: 0.1, count: 0, icon: 'minimoose.png' },
@@ -191,6 +193,7 @@ function updateUI() {
     ppsDisplay.textContent = formatNumber(perSecond.toFixed(1));
     updateUpgradesUI();
     updateSlotsUI();
+    updateCasinoUI();
 }
 
 function updateUpgradesUI() {
@@ -323,11 +326,351 @@ async function spinSlots(cost, idPrefix, icons, resultEl, winMultipliers) {
     }, 2000);
 }
 
+// --- BAD DECISIONS INC. ---
+// All stakes and winnings use the same fictional pervitin balance as the slots.
+const coinHistory = [];
+const wheelPrizes = [0, 0, 0.5, 0.5, 1, 1, 2, 8];
+let wheelBusy = false;
+let wheelRotation = 0;
+let wheelTimeout = null;
+let crashRound = null;
+let crashFrame = null;
+let bonkRound = null;
+let bonkTimer = null;
+let bonkCooldownUntil = 0;
+
+function casinoMessage(id, message, outcome) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = message;
+    el.classList.toggle('casino-win', outcome === 'win');
+    el.classList.toggle('casino-lose', outcome === 'lose');
+}
+
+function casinoStake(inputId, resultId) {
+    const input = document.getElementById(inputId);
+    const wager = Number(input.value);
+    if (!Number.isSafeInteger(wager) || wager < 1) {
+        casinoMessage(resultId, 'please enter an actual number, you creature', 'lose');
+        playSound('fail');
+        return null;
+    }
+    if (wager > score) {
+        casinoMessage(resultId, 'insufficient financial irresponsibility', 'lose');
+        playSound('fail');
+        return null;
+    }
+    score -= wager;
+    casinoStats.gambled += wager;
+    // The original slots keep their own 0.1% jumpscare roll. New paid games
+    // get the same independent 1 in 1000 chance per wager.
+    if (Math.random() < 0.001) {
+        setTimeout(showFoxyJumpscare, 550);
+    }
+    updateUI();
+    return wager;
+}
+
+function casinoPayout(amount) {
+    if (!Number.isFinite(amount) || amount <= 0) return;
+    const prize = Math.floor(amount);
+    score += prize;
+    casinoStats.bestWin = Math.max(casinoStats.bestWin, prize);
+    if (prize > 0) playSound('success');
+    if (prize >= 5000) {
+        confetti({particleCount: 95, spread: 80, origin: {y: 0.7}});
+    }
+    updateUI();
+}
+
+function flipDivorceCoin(choice) {
+    const bet = casinoStake('coin-bet', 'coin-result');
+    if (bet === null) return;
+    const wonSide = Math.random() < 0.5 ? 'heads' : 'tails';
+    const won = choice === wonSide;
+    const epoch = casinoEpoch;
+    const coin = document.getElementById('coin-disc');
+    coin.textContent = '?';
+    coin.classList.add('flipping');
+    playSound('click');
+    setTimeout(() => {
+        if (epoch !== casinoEpoch) return;
+        coin.classList.remove('flipping');
+        coin.textContent = wonSide === 'heads' ? 'h' : 't';
+        if (won) {
+            const prize = Math.floor(bet * 1.9);
+            casinoPayout(prize);
+            casinoMessage('coin-result', 'correct. +' + formatNumber(prize) + '. genius behaviour', 'win');
+        } else {
+            playSound('fail');
+            casinoMessage('coin-result', 'wrong. -' + formatNumber(bet) + '. the coin hates you', 'lose');
+        }
+        coinHistory.unshift(wonSide === 'heads' ? 'h' : 't');
+        if (coinHistory.length > 10) coinHistory.pop();
+        const history = document.getElementById('coin-history');
+        history.replaceChildren();
+        for (const side of coinHistory) {
+            const marker = document.createElement('span');
+            marker.textContent = side;
+            history.appendChild(marker);
+        }
+    }, 280);
+}
+
+function spinQuestionableWheel() {
+    if (wheelBusy) return;
+    const bet = casinoStake('wheel-bet', 'wheel-result');
+    if (bet === null) return;
+    wheelBusy = true;
+    const epoch = casinoEpoch;
+    const index = Math.floor(Math.random() * wheelPrizes.length);
+    const multiplier = wheelPrizes[index];
+    const wheel = document.getElementById('wheel-disc');
+    const segmentSize = 360 / wheelPrizes.length;
+    const current = ((wheelRotation % 360) + 360) % 360;
+    const target = (360 - (index + 0.5) * segmentSize + 360) % 360;
+    wheelRotation += 1440 + ((target - current + 360) % 360);
+    wheel.style.transform = 'rotate(' + wheelRotation + 'deg)';
+    document.getElementById('wheel-label').textContent = '?';
+    casinoMessage('wheel-result', 'the wheel is consulting its lawyer');
+    playSound('slots_spin');
+    updateCasinoUI();
+    wheelTimeout = setTimeout(() => {
+        wheelTimeout = null;
+        if (casinoEpoch !== epoch) return;
+        wheelBusy = false;
+        document.getElementById('wheel-label').textContent = multiplier + 'x';
+        const prize = Math.floor(bet * multiplier);
+        if (prize > 0) {
+            casinoPayout(prize);
+            casinoMessage('wheel-result', multiplier + 'x. +' + formatNumber(prize) + ' pervitins. suspicious', 'win');
+        } else {
+            playSound('fail');
+            casinoMessage('wheel-result', '0x. the wheel has seized your assets', 'lose');
+        }
+        updateCasinoUI();
+    }, window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 150 : 1450);
+}
+
+function crashMultiplier(elapsedMs) {
+    const s = elapsedMs / 1000;
+    return 1 + 0.35 * s + 0.055 * s * s;
+}
+
+function crashPaint(multiplier, busted) {
+    const readout = document.getElementById('crash-number');
+    readout.textContent = multiplier.toFixed(2) + 'x';
+    readout.classList.toggle('busted', Boolean(busted));
+    document.getElementById('crash-meter-fill').style.width =
+        Math.min(100, (multiplier - 1) / 9 * 100) + '%';
+}
+
+function crashEnd(payout, message, busted) {
+    if (!crashRound) return;
+    crashRound = null;
+    if (crashFrame !== null) cancelAnimationFrame(crashFrame);
+    crashFrame = null;
+    if (payout > 0) casinoPayout(payout);
+    else playSound('fail');
+    casinoMessage('crash-result', message, payout > 0 ? 'win' : 'lose');
+    document.getElementById('crash-number').classList.toggle('busted', Boolean(busted));
+    updateCasinoUI();
+}
+
+function crashTick() {
+    if (!crashRound) return;
+    const value = crashMultiplier(Date.now() - crashRound.started);
+    if (value >= crashRound.bustAt) {
+        crashPaint(crashRound.bustAt, true);
+        crashEnd(0, 'crashed at ' + crashRound.bustAt.toFixed(2) + 'x. idiot tax collected', true);
+        return;
+    }
+    crashPaint(value, false);
+    crashFrame = requestAnimationFrame(crashTick);
+}
+
+function startCrash() {
+    if (crashRound) return;
+    const bet = casinoStake('crash-bet', 'crash-result');
+    if (bet === null) return;
+    crashRound = {
+        bet: bet,
+        started: Date.now(),
+        // Mostly low multipliers with occasional moonshots, capped at 30x.
+        bustAt: Math.max(1.01, Math.min(30, 0.95 / (1 - Math.random())))
+    };
+    crashPaint(1, false);
+    casinoMessage('crash-result', 'cash out. no pressure. absolutely no pressure');
+    playSound('slots_spin');
+    updateCasinoUI();
+    crashFrame = requestAnimationFrame(crashTick);
+}
+
+function cashOutCrash() {
+    if (!crashRound) return;
+    // Calculate from the clock, not the last frame, so background tabs cannot
+    // cash out a run which actually crashed while rendering was suspended.
+    const current = crashMultiplier(Date.now() - crashRound.started);
+    if (current >= crashRound.bustAt) {
+        crashPaint(crashRound.bustAt, true);
+        crashEnd(0, 'crashed at ' + crashRound.bustAt.toFixed(2) + 'x. too slow', true);
+        return;
+    }
+    const prize = Math.floor(crashRound.bet * current);
+    crashPaint(current, false);
+    crashEnd(prize, 'escaped at ' + current.toFixed(2) + 'x. +' + formatNumber(prize), false);
+}
+
+function renderBonkGrid() {
+    const grid = document.getElementById('bonk-grid');
+    if (!grid || !grid.children.length) return;
+    for (let i = 0; i < grid.children.length; i++) {
+        const btn = grid.children[i];
+        const isTarget = bonkRound && bonkRound.target === i;
+        btn.replaceChildren();
+        btn.classList.toggle('has-pig', Boolean(isTarget));
+        if (isTarget) {
+            const img = document.createElement('img');
+            img.src = 'rubber_pig.png';
+            img.alt = '';
+            btn.appendChild(img);
+            btn.setAttribute('aria-label', 'bonk the pig, hole ' + (i + 1));
+        } else {
+            btn.setAttribute('aria-label', 'empty hole ' + (i + 1));
+        }
+    }
+}
+
+function endBonk() {
+    if (!bonkRound) return;
+    const hits = bonkRound.hits;
+    bonkRound = null;
+    clearInterval(bonkTimer);
+    bonkTimer = null;
+    bonkCooldownUntil = Date.now() + 20000;
+    renderBonkGrid();
+    casinoMessage('bonk-result', hits + ' bonks. your government is very upset', hits > 0 ? 'win' : 'lose');
+    updateCasinoUI();
+}
+
+function bonkPig(index) {
+    if (!bonkRound || bonkRound.target !== index) return;
+    if (Date.now() >= bonkRound.ends) {
+        endBonk();
+        return;
+    }
+    bonkRound.hits++;
+    casinoStats.bonks++;
+    const reward = 10 + Math.min(30, bonkRound.hits * 2);
+    score += reward;
+    playSound('click');
+    document.getElementById('bonk-count').textContent = String(bonkRound.hits);
+    const old = bonkRound.target;
+    bonkRound.target = (old + 1 + Math.floor(Math.random() * 8)) % 9;
+    renderBonkGrid();
+    updateUI();
+}
+
+function startBonk() {
+    if (bonkRound || Date.now() < bonkCooldownUntil) return;
+    bonkRound = { hits: 0, target: Math.floor(Math.random() * 9), ends: Date.now() + 10000 };
+    document.getElementById('bonk-count').textContent = '0';
+    casinoMessage('bonk-result', 'he has committed tax fraud. get him');
+    renderBonkGrid();
+    playSound('slots_spin');
+    updateCasinoUI();
+    bonkTimer = setInterval(() => {
+        if (!bonkRound) return;
+        if (Date.now() >= bonkRound.ends) {
+            endBonk();
+        } else {
+            updateCasinoUI();
+        }
+    }, 80);
+}
+
+function updateCasinoUI() {
+    if (!document.getElementById('casino-area')) return;
+    document.getElementById('casino-gambled').textContent = formatNumber(casinoStats.gambled);
+    document.getElementById('casino-best').textContent = formatNumber(casinoStats.bestWin);
+    document.getElementById('wheel-spin').disabled = wheelBusy;
+    document.getElementById('crash-start').disabled = Boolean(crashRound);
+    document.getElementById('crash-cashout').disabled = !crashRound;
+    const bonkButton = document.getElementById('bonk-start');
+    const cooldown = Math.max(0, bonkCooldownUntil - Date.now());
+    bonkButton.disabled = Boolean(bonkRound) || cooldown > 0;
+    bonkButton.textContent = bonkRound ? 'pig currently loose' :
+        cooldown > 0 ? 'pig on break ' + Math.ceil(cooldown / 1000) + 's' : 'release the pig';
+    if (bonkRound) {
+        document.getElementById('bonk-time').textContent =
+            (Math.max(0, bonkRound.ends - Date.now()) / 1000).toFixed(1);
+    }
+}
+
+function cancelCasinoRounds() {
+    casinoEpoch++;
+    clearTimeout(wheelTimeout);
+    wheelTimeout = null;
+    wheelBusy = false;
+    if (crashFrame !== null) cancelAnimationFrame(crashFrame);
+    crashFrame = null;
+    crashRound = null;
+    clearInterval(bonkTimer);
+    bonkTimer = null;
+    bonkRound = null;
+    coinHistory.length = 0;
+    const history = document.getElementById('coin-history');
+    if (history) history.replaceChildren();
+    const coin = document.getElementById('coin-disc');
+    if (coin) coin.classList.remove('flipping');
+    renderBonkGrid();
+}
+
+function initCasino() {
+    if (!document.getElementById('casino-area')) return;
+    const modeButtons = document.querySelectorAll('[data-casino-tab]');
+    for (const button of modeButtons) {
+        button.addEventListener('click', () => {
+            for (const other of modeButtons) {
+                const active = other === button;
+                other.classList.toggle('is-active', active);
+                other.setAttribute('aria-pressed', String(active));
+            }
+            for (const panel of document.querySelectorAll('.casino-mode')) {
+                panel.hidden = panel.id !== 'casino-' + button.dataset.casinoTab;
+            }
+        });
+    }
+    for (const button of document.querySelectorAll('[data-bet-max]')) {
+        button.addEventListener('click', () => {
+            const input = document.getElementById(button.dataset.betMax);
+            input.value = String(Math.max(1, Math.floor(Math.min(score, Number.MAX_SAFE_INTEGER))));
+        });
+    }
+    document.getElementById('coin-head').addEventListener('click', () => flipDivorceCoin('heads'));
+    document.getElementById('coin-tail').addEventListener('click', () => flipDivorceCoin('tails'));
+    document.getElementById('wheel-spin').addEventListener('click', spinQuestionableWheel);
+    document.getElementById('crash-start').addEventListener('click', startCrash);
+    document.getElementById('crash-cashout').addEventListener('click', cashOutCrash);
+    const grid = document.getElementById('bonk-grid');
+    for (let i = 0; i < 9; i++) {
+        const cell = document.createElement('button');
+        cell.type = 'button';
+        cell.className = 'bonk-cell';
+        cell.addEventListener('click', () => bonkPig(i));
+        grid.appendChild(cell);
+    }
+    document.getElementById('bonk-start').addEventListener('click', startBonk);
+    renderBonkGrid();
+    updateCasinoUI();
+}
+
 // --- SAVE/LOAD ---
 function saveGame() {
     const gameState = {
         score,
-        upgrades: upgrades.map(u => ({ count: u.count }))
+        upgrades: upgrades.map(u => ({ count: u.count })),
+        casino: { ...casinoStats }
     };
     localStorage.setItem('zimClickerSave', JSON.stringify(gameState));
     saveButton.textContent = 'Saved!';
@@ -348,6 +691,16 @@ function loadGame() {
             });
         }
 
+        cancelCasinoRounds();
+        casinoStats.gambled = 0;
+        casinoStats.bestWin = 0;
+        casinoStats.bonks = 0;
+        if (gameState.casino && typeof gameState.casino === 'object') {
+            for (const key of Object.keys(casinoStats)) {
+                const value = Number(gameState.casino[key]);
+                if (Number.isFinite(value) && value >= 0) casinoStats[key] = Math.floor(value);
+            }
+        }
         return true;
     }
     return false;
@@ -359,6 +712,11 @@ function resetGame() {
         score = 0;
         perSecond = 0;
         upgrades.forEach(u => u.count = 0);
+        cancelCasinoRounds();
+        casinoStats.gambled = 0;
+        casinoStats.bestWin = 0;
+        casinoStats.bonks = 0;
+        bonkCooldownUntil = 0;
         recalculatePPS();
         updateUI();
     }
@@ -369,6 +727,7 @@ function init() {
     loadGame();
     recalculatePPS();
     generateShop();
+    initCasino();
     generateSlotMachine(slotMachineContainer, 'slot', "GIR's Slots", 100, 
         () => spinSlots(100, 'slot', slotIcons, document.getElementById('slot-result'), {triple: 20, double: 3}), 
         slotIcons);
