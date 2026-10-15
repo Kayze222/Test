@@ -1,4 +1,4 @@
-// Classic FPS 2D weapon system. Original pixel art baked from project-owned / CC0 geometry.
+// Classic FPS 2D weapon system with baked hand-and-weapon sprite frames.
 // No WebGL arms, GLTFLoader, or independent bone grip offsets are involved.
 const FRAMES = ['idle','shoot','recover','lower'];
 const BASE = './assets/viewmodels/';
@@ -9,7 +9,7 @@ export class SpriteViewmodel {
   this.canvas.setAttribute('aria-hidden','true');
   Object.assign(this.canvas.style,{
    position:'fixed',bottom:'0',left:'50%',transform:'translateX(-50%)',
-   width:'min(100vw, 150vh)',height:'auto',aspectRatio:'4 / 3',zIndex:'9',
+   width:'min(100vw, 54vh, 700px)',height:'auto',aspectRatio:'4 / 3',zIndex:'9',
    pointerEvents:'none',imageRendering:'pixelated',display:'none',
    filter:'drop-shadow(0 6px 10px rgba(0,0,0,.75))'
   });
