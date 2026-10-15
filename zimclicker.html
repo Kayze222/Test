@@ -48,6 +48,85 @@
                 <div id="slot-machine-container"></div>
                 <div id="slot-machine-2-container"></div>
             </div>
+
+            <section id="casino-area" aria-labelledby="casino-title">
+                <h2 class="title" id="casino-title">bad decisions inc.</h2>
+                <p class="casino-subtitle">four absolutely normal ways to lose pervitins</p>
+                <div class="casino-tabs" aria-label="minigames">
+                    <button type="button" class="casino-tab is-active" data-casino-tab="coin" aria-pressed="true">the coin</button>
+                    <button type="button" class="casino-tab" data-casino-tab="wheel" aria-pressed="false">wheel</button>
+                    <button type="button" class="casino-tab" data-casino-tab="crash" aria-pressed="false">number go up</button>
+                    <button type="button" class="casino-tab" data-casino-tab="bonk" aria-pressed="false">bonk pig</button>
+                </div>
+
+                <div id="casino-coin" class="slot-machine casino-mode">
+                    <h3>the 50/50 divorce coin</h3>
+                    <p class="casino-hint">pick a side. 1.9x if correct. you are definitely correct.</p>
+                    <div class="casino-bet-row">
+                        <label for="coin-bet">bet</label>
+                        <input type="number" id="coin-bet" min="1" step="1" value="100" inputmode="numeric">
+                        <button type="button" class="casino-small" data-bet-max="coin-bet">max</button>
+                    </div>
+                    <div class="casino-actions">
+                        <button id="coin-head" type="button">heads</button>
+                        <button id="coin-tail" type="button">tails</button>
+                    </div>
+                    <div id="coin-disc" class="coin-disc" aria-hidden="true">?</div>
+                    <p id="coin-result" class="casino-result" role="status">give the coin your life savings</p>
+                    <div id="coin-history" class="casino-history" aria-label="recent coin flips"></div>
+                </div>
+
+                <div id="casino-wheel" class="slot-machine casino-mode" hidden>
+                    <h3>wheel of questionable decisions</h3>
+                    <p class="casino-hint">most of these are terrible. one says 8x though.</p>
+                    <div class="casino-bet-row">
+                        <label for="wheel-bet">bet</label>
+                        <input type="number" id="wheel-bet" min="1" step="1" value="500" inputmode="numeric">
+                        <button type="button" class="casino-small" data-bet-max="wheel-bet">max</button>
+                    </div>
+                    <div class="casino-wheel-wrap">
+                        <div id="wheel-disc" class="casino-wheel" aria-hidden="true">
+                            <span id="wheel-label" class="casino-wheel-label">?</span>
+                        </div>
+                    </div>
+                    <button id="wheel-spin" type="button">spin the financial mistake</button>
+                    <p id="wheel-result" class="casino-result" role="status">the wheel has no qualifications</p>
+                </div>
+
+                <div id="casino-crash" class="slot-machine casino-mode" hidden>
+                    <h3>number go up</h3>
+                    <p class="casino-hint">cash out before the number decides it hates you</p>
+                    <div class="casino-bet-row">
+                        <label for="crash-bet">bet</label>
+                        <input type="number" id="crash-bet" min="1" step="1" value="250" inputmode="numeric">
+                        <button type="button" class="casino-small" data-bet-max="crash-bet">max</button>
+                    </div>
+                    <div id="crash-number" class="crash-number" aria-live="off">1.00x</div>
+                    <div class="crash-meter"><div id="crash-meter-fill"></div></div>
+                    <div class="casino-actions">
+                        <button id="crash-start" type="button">send it</button>
+                        <button id="crash-cashout" type="button" disabled>cash out</button>
+                    </div>
+                    <p id="crash-result" class="casino-result" role="status">this is financial advice (not)</p>
+                </div>
+
+                <div id="casino-bonk" class="slot-machine casino-mode" hidden>
+                    <h3>bonk the government pig</h3>
+                    <p class="casino-hint">free ten-second panic attack. click the pig for pervitins.</p>
+                    <div class="casino-bonk-top">
+                        <span>time <strong id="bonk-time">10.0</strong>s</span>
+                        <span>bonks <strong id="bonk-count">0</strong></span>
+                    </div>
+                    <div id="bonk-grid" class="bonk-grid" aria-label="bonk the pig grid"></div>
+                    <button id="bonk-start" type="button">release the pig</button>
+                    <p id="bonk-result" class="casino-result" role="status">the pig is avoiding taxes</p>
+                </div>
+
+                <div class="casino-totals">
+                    <span>pervitins gambled: <strong id="casino-gambled">0</strong></span>
+                    <span>biggest accidental win: <strong id="casino-best">0</strong></span>
+                </div>
+            </section>
         </div>
 
         <div id="right-column">
