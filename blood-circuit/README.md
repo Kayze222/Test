@@ -27,3 +27,7 @@ Serve this folder using any HTTP static server (for example, `python -m http.ser
 Four new active enemies: **Stalker** (teleport warning), **Skitter** (flanking melee), **Chorister** (hovering fan projectile volley), and **Leech** (health-draining melee). New ambient watcher silhouettes, red flickering lights, stained terrain, darker fog and online-sourced CC0 surface textures with offline procedural fallbacks. See `ASSET_CREDITS.md`.
 
 **Playtest milestones:** Skitter starts in wave 3, Stalker in wave 4, Chorister in wave 6 and Leech in wave 8. The optional online-sourced CC0 material maps fall back gracefully when blocked.
+
+## First-person arm rig
+
+Uses the original user-supplied `assets/models/arms_rig.glb` (52-bone skin, 18 embedded animations) with Three.js r180 GLTFLoader. It crossfades idle, fire and parry motions, keeps the existing weapons, and falls back to proxy hands if the optional asset fails to load. `view-arm-model.js` (the broken static extraction) was removed. The visual grip/alignment requires an in-game check.

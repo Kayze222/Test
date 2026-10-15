@@ -3,34 +3,10 @@ import {CombatFX,starGeometry} from './combat-fx.js';
 import {RetroRenderer} from './retro-renderer.js';
 import {surface} from './arena-textures.js';
 import {sourcedModel} from './sourced-models.js';
-import {VIEW_ARMS} from './view-arm-model.js';
 export {T};
 const geometries={box:new T.BoxGeometry(1,1,1),sphere:new T.IcosahedronGeometry(1,0),oct:new T.OctahedronGeometry(1),cyl:new T.CylinderGeometry(1,1,1,8),cone:new T.ConeGeometry(1,1,5),ring:new T.TorusGeometry(1,.025,4,64),plane:new T.PlaneGeometry(1,1)};
 const mats=new Map();
 function mat(color,glow=false){const k=color+':'+glow;if(!mats.has(k))mats.set(k,glow?new T.MeshBasicMaterial({color}):new T.MeshLambertMaterial({color,flatShading:true}));return mats.get(k)}
-const viewArmAssets={geometry:null,material:null,texture:null};
-function makeViewArms(){
- if(!viewArmAssets.geometry){
-  const g=new T.BufferGeometry();
-  g.setAttribute('position',new T.BufferAttribute(VIEW_ARMS.position,3));
-  g.setAttribute('uv',new T.BufferAttribute(VIEW_ARMS.uv,2));
-  g.setIndex(new T.BufferAttribute(VIEW_ARMS.index,1));
-  g.computeVertexNormals();
-  const tex=new T.TextureLoader().load(VIEW_ARMS.texture);
-  tex.colorSpace=T.SRGBColorSpace;
-  tex.magFilter=T.NearestFilter;
-  tex.minFilter=T.NearestMipMapNearestFilter;
-  tex.generateMipmaps=true;
-  viewArmAssets.texture=tex;
-  viewArmAssets.material=new T.MeshLambertMaterial({map:tex,transparent:true,alphaTest:.35,side:T.DoubleSide});
-  viewArmAssets.geometry=g;
- }
- const m=new T.Mesh(viewArmAssets.geometry,viewArmAssets.material);
- m.name='psx-view-arms';
- m.renderOrder=2;
- m.frustumCulled=false;
- return m;
-}
 export function mesh(shape,color,x=0,y=0,z=0,sx=1,sy=1,sz=1,glow=false){const m=new T.Mesh(geometries[shape],mat(color,glow));m.position.set(x,y,z);m.scale.set(sx,sy,sz);return m}
 export class World{
  constructor(container){
@@ -38,7 +14,7 @@ export class World{
  this.scene=new T.Scene();this.scene.fog=new T.Fog(0x100d13,21,121);this.camera=new T.PerspectiveCamera(88,innerWidth/innerHeight,.06,210);this.camera.rotation.order='YXZ';this.scene.add(this.camera);
  this.scene.add(new T.HemisphereLight(0x8595a9,0x19070b,1.05));const dl=new T.DirectionalLight(0xc7d4cb,1.55);dl.position.set(5,20,10);this.scene.add(dl);const dl2=new T.DirectionalLight(0xa80e2e,1.85);dl2.position.set(-15,8,-20);this.scene.add(dl2);
  this.post=new RetroRenderer(this.renderer);this.viewScene=new T.Scene();this.viewCamera=new T.PerspectiveCamera(65,innerWidth/innerHeight,.02,8);this.viewScene.add(this.viewCamera);this.viewScene.add(new T.HemisphereLight(0xc5d7ff,0x281324,2.5));const weaponLight=new T.DirectionalLight(0xffe4c6,2.7);weaponLight.position.set(-1,2,2);this.viewScene.add(weaponLight);this.muzzleLight=new T.PointLight(0xffd579,0,4,2);this.viewScene.add(this.muzzleLight);this.effects=new CombatFX(this.scene,this.camera);this.reduced=false;this.muzzleTime=0;this.swapTime=0;this.activeWeapon=0;this.time=0;
- this.limit=51.6;this.flickerLights=[];this.watchers=[];this.colliders=[];this.ramps=[];this.pads=[{x:-19,z:9},{x:19,z:-9},{x:-39,z:-25},{x:39,z:25}];this.chests=[];this.fx=[];this.decals=[];this.buildArena();this.buildWeapons();
+ this.limit=51.6;this.flickerLights=[];this.watchers=[];this.colliders=[];this.ramps=[];this.pads=[{x:-19,z:9},{x:19,z:-9},{x:-39,z:-25},{x:39,z:25}];this.chests=[];this.fx=[];this.decals=[];this.buildArena();this.buildWeapons();this.loadRiggedArms();
  window.addEventListener('resize',()=>{this.camera.aspect=innerWidth/innerHeight;this.camera.updateProjectionMatrix();this.renderer.setSize(innerWidth,innerHeight);this.viewCamera.aspect=innerWidth/innerHeight;this.viewCamera.updateProjectionMatrix();this.post.resize(innerWidth,innerHeight)})
  }
  add(shape,color,x,y,z,sx,sy,sz,glow=false,parent=this.scene){const m=mesh(shape,color,x,y,z,sx,sy,sz,glow);parent.add(m);return m}
@@ -200,21 +176,105 @@ export class World{
  const proxy=new T.Group();g.add(proxy);g.userData.handProxy=proxy;
  this.add('box',0x687e99,.025,-.28,.3,.23,.13,.28,false,proxy);this.add('box',0x253d69,.03,-.31,.48,.25,.22,.42,false,proxy);this.add('box',0x4f78b7,.03,-.19,.48,.22,.035,.3,false,proxy);
  g.userData.muzzle=new T.Vector3(0,.02,type===0?-.85:type===1?-1.04:-1.22);const flash=new T.Group();flash.position.copy(g.userData.muzzle);for(const [color,size,angle] of [[accent,.27,0],[0xfff6b3,.19,.4],[0xffffff,.1,0]]){const m=new T.Mesh(starGeometry(),new T.MeshBasicMaterial({color,transparent:true,blending:T.AdditiveBlending,depthWrite:false,side:T.DoubleSide}));m.scale.setScalar(size);m.rotation.z=angle;flash.add(m)}flash.visible=false;g.add(flash);g.userData.flash=flash;this.guns.push(g)}
- this.viewArms=makeViewArms();this.gunRoot.add(this.viewArms);this.viewArms.scale.setScalar(.55);this.viewArms.position.set(-.39,-.61,.18);this.viewArms.rotation.set(.02,Math.PI,-.01);for(const gun of this.guns)if(gun.userData.handProxy)gun.userData.handProxy.visible=false;
+ // The actual skinned GLB is mounted separately in view-camera space and animated.
+ // Keep the simple proxy until the asynchronous rig finishes loading.
+ this.armFrame=new T.Group();this.viewCamera.add(this.armFrame);this.armFrame.visible=false;
+ this.armRig=null;this.armMixer=null;this.armActions=new Map();this.armCurrent=null;
+ this.armOneShot=false;this.armWeapon=-1;this.armParryWas=false;
  this.fist=new T.Group();this.viewCamera.add(this.fist);this.add('box',0x4a5552,0,0,0,.26,.22,.4,false,this.fist);this.add('box',0xe8ab78,0,.06,-.24,.3,.2,.15,false,this.fist);this.add('box',0xf2dbb0,0,.16,-.2,.29,.04,.2,false,this.fist);this.fist.visible=false;
  }
- setFX(settings){this.reduced=!!settings.reduced;this.effects.reduced=this.reduced;this.post.uniforms.reduced.value=this.reduced?1:0;this.post.uniforms.vhs.value=settings.crt?1:0}
- fireWeapon(index){this.activeWeapon=index;this.muzzleTime=index===1?.085:index===2?.12:.065;this.guns[index].userData.flash.rotation.z=Math.random()*6.28;this.post.uniforms.impact.value=Math.max(this.post.uniforms.impact.value,index===2?.5:.13)}
- muzzlePosition(index){this.viewScene.updateMatrixWorld(true);this.camera.updateMatrixWorld(true);const p=this.guns[index].localToWorld(this.guns[index].userData.muzzle.clone()).applyMatrix4(this.viewCamera.matrixWorldInverse);const view=this.viewCamera.projectionMatrix.elements,world=this.camera.projectionMatrix.elements;p.x*=view[0]/world[0];p.y*=view[5]/world[5];return p.applyMatrix4(this.camera.matrixWorld)}
- weaponPose(index,time,moving,recoil,parry,slide,strafe=0){if(index!==this.activeWeapon){this.swapTime=.15;this.activeWeapon=index}this.gunRoot.visible=true;this.guns.forEach((g,i)=>g.visible=i===index);const swap=this.swapTime/.15,weight=[1,1.3,.8][index];this.gunRoot.scale.setScalar(1.04);this.gunRoot.position.set(.39+Math.sin(time*10)*moving*.013,-.38+Math.abs(Math.cos(time*10))*moving*.015-(slide?.06:0)-swap*.22,-.65+recoil*.18*weight);this.gunRoot.rotation.set(recoil*.15*weight-swap*.25,-recoil*.04,-.045-Math.sin(time*10)*moving*.012+strafe*.02+recoil*.04);const pump=this.guns[index].userData.pump;if(pump)pump.position.z=-.53+Math.sin(Math.min(1,recoil/1.6)*Math.PI)*.18;
- if(this.viewArms){
-  const armYOffset=index===1?-.03:index===2?.02:0;
-  const armZOffset=index===1?-.05:index===2?.02:0;
-  this.viewArms.visible=parry<=0;
-  this.viewArms.position.set(-.39,-.61+armYOffset,.18+armZOffset);
-  this.viewArms.rotation.set(.02+recoil*.05,Math.PI+(index===1?.03:index===2?-.03:0),-.01+strafe*.035-recoil*.015);
+ async loadRiggedArms(){
+  try{
+   // Defer the optional loader so an asset error cannot prevent the game booting.
+   const {GLTFLoader}=await import('./vendor/GLTFLoader.js');
+   const gltf=await new GLTFLoader().loadAsync('./assets/models/arms_rig.glb');
+   if(!gltf.scene||!gltf.animations?.length)throw new Error('Arm rig/animations are missing');
+   const skinned=[];
+   gltf.scene.traverse(object=>{
+    if(object.isSkinnedMesh){
+     object.frustumCulled=false;
+     skinned.push(object);
+     const materials=Array.isArray(object.material)?object.material:[object.material];
+     for(const material of materials){
+      material.side=T.DoubleSide;
+      material.roughness=1;
+      material.metalness=0;
+      material.flatShading=true;
+      if(material.map){material.map.magFilter=T.NearestFilter;material.map.minFilter=T.NearestMipmapNearestFilter;}
+      material.needsUpdate=true;
+     }
+    }
+   });
+   if(!skinned.length||skinned.some(o=>!o.skeleton?.bones?.length))throw new Error('No bound skinned arm meshes');
+   this.armFrame.add(gltf.scene);
+   this.armRig=gltf.scene;
+   // The source asset is authored around a 1.7m-high FPS camera. Position its
+   // original skeleton (not detached vertices) relative to the view-camera.
+   this.armRig.scale.setScalar(.78);
+   this.armRig.position.set(-.01,-1.68,-.86);
+   this.armMixer=new T.AnimationMixer(this.armRig);
+   for(const clip of gltf.animations){
+    if(['finger_gun_idle','guard_idle','knife_idle','finger_gun_fire','push.R','knife_hit_01','jab.L','jab.R','guard_draw'].includes(clip.name)){
+     this.armActions.set(clip.name,this.armMixer.clipAction(clip));
+    }
+   }
+   this.armWeapon=-1;
+   this.playArmIdle(0,true);
+   for(const gun of this.guns)if(gun.userData.handProxy)gun.userData.handProxy.visible=false;
+   console.info('[BLOOD//CIRCUIT] Rigged FPS arms loaded:',skinned.length,'mesh(es),',gltf.animations.length,'clips,',skinned[0].skeleton.bones.length,'joints');
+  }catch(error){
+   console.warn('[BLOOD//CIRCUIT] Rigged arm asset failed; using original proxy hands:',error);
+   this.armRig=null;
+   this.armFrame.visible=false;
+   for(const gun of this.guns)if(gun.userData.handProxy)gun.userData.handProxy.visible=true;
+  }
  }
- this.fist.visible=parry>0;if(parry>0){const v=Math.sin(Math.min(1,parry/.35)*Math.PI);this.fist.position.set(-.4,-.33+v*.17,-.7-v*.44);this.fist.rotation.set(-.2-v*.3,0,-v*.2)}}
+ playArm(name,oneShot=false,instant=false){
+  const action=this.armActions.get(name);
+  if(!action||!this.armMixer)return;
+  if(this.armCurrent===action&&!oneShot)return;
+  const previous=this.armCurrent;
+  action.reset();action.enabled=true;action.setEffectiveWeight(1);
+  action.setLoop(oneShot?T.LoopOnce:T.LoopRepeat,oneShot?1:Infinity);
+  action.clampWhenFinished=oneShot;
+  if(previous&&previous!==action&&!instant){previous.fadeOut(.12);action.fadeIn(.12);}
+  else action.setEffectiveWeight(1);
+  action.play();this.armCurrent=action;this.armOneShot=oneShot;
+ }
+ playArmIdle(index,instant=false){
+  this.armWeapon=index;
+  this.playArm(['finger_gun_idle','guard_idle','knife_idle'][index]||'guard_idle',false,instant);
+ }
+ triggerArmStrike(type){
+  if(!this.armRig)return;
+  const action=type==='parry'?'jab.L':['finger_gun_fire','push.R','knife_hit_01'][this.activeWeapon];
+  this.playArm(action,true);
+ }
+ setFX(settings){this.reduced=!!settings.reduced;this.effects.reduced=this.reduced;this.post.uniforms.reduced.value=this.reduced?1:0;this.post.uniforms.vhs.value=settings.crt?1:0}
+ fireWeapon(index){this.activeWeapon=index;this.triggerArmStrike('shoot');this.muzzleTime=index===1?.085:index===2?.12:.065;this.guns[index].userData.flash.rotation.z=Math.random()*6.28;this.post.uniforms.impact.value=Math.max(this.post.uniforms.impact.value,index===2?.5:.13)}
+ muzzlePosition(index){this.viewScene.updateMatrixWorld(true);this.camera.updateMatrixWorld(true);const p=this.guns[index].localToWorld(this.guns[index].userData.muzzle.clone()).applyMatrix4(this.viewCamera.matrixWorldInverse);const view=this.viewCamera.projectionMatrix.elements,world=this.camera.projectionMatrix.elements;p.x*=view[0]/world[0];p.y*=view[5]/world[5];return p.applyMatrix4(this.camera.matrixWorld)}
+ weaponPose(index,time,moving,recoil,parry,slide,strafe=0){
+  if(index!==this.activeWeapon){this.swapTime=.15;this.activeWeapon=index;}
+  this.gunRoot.visible=true;
+  this.guns.forEach((g,i)=>g.visible=i===index);
+  const swap=this.swapTime/.15,weight=[1,1.3,.8][index];
+  this.gunRoot.scale.setScalar(1.04);
+  this.gunRoot.position.set(.39+Math.sin(time*10)*moving*.013,-.38+Math.abs(Math.cos(time*10))*moving*.015-(slide?.06:0)-swap*.22,-.65+recoil*.18*weight);
+  this.gunRoot.rotation.set(recoil*.15*weight-swap*.25,-recoil*.04,-.045-Math.sin(time*10)*moving*.012+strafe*.02+recoil*.04);
+  const pump=this.guns[index].userData.pump;
+  if(pump)pump.position.z=-.53+Math.sin(Math.min(1,recoil/1.6)*Math.PI)*.18;
+  if(this.armRig){
+   this.armFrame.visible=true;
+   this.armFrame.position.set(-.045+Math.sin(time*10)*moving*.012,-.025+Math.abs(Math.sin(time*10))*moving*.016-(slide?.075:0)-swap*.14,Math.min(.12,recoil*.07));
+   this.armFrame.rotation.set(recoil*.045,-recoil*.025,strafe*.025);
+   if(this.armWeapon!==index&&!this.armOneShot)this.playArmIdle(index);
+   if(parry>0&&!this.armParryWas)this.triggerArmStrike('parry');
+   this.armParryWas=parry>0;
+  }
+  this.fist.visible=parry>0&&!this.armRig;
+  if(this.fist.visible){const v=Math.sin(Math.min(1,parry/.35)*Math.PI);this.fist.position.set(-.4,-.33+v*.17,-.7-v*.44);this.fist.rotation.set(-.2-v*.3,0,-v*.2);}
+ }
+
  tracer(from,to,color=0xffefb0,width=.025,duration=.085){return this.effects.beam(from,to,color,width,duration)}
  burst(pos,color,count=10,power=5){this.effects.burst(pos,color,count,power)}
  blood(pos){this.effects.blood(pos)}
@@ -223,8 +283,8 @@ export class World{
  hitEnemy(e){e.mesh.userData.flashUntil=this.time+.065}
  parryBurst(pos){this.effects.parry(pos);this.post.uniforms.impact.value=1}
  explosion(pos,color=0xff5428,size=1){this.effects.explosion(pos,color,size);this.post.uniforms.impact.value=Math.max(this.post.uniforms.impact.value,.7)}
- updateFx(dt,time){this.time=time;this.reactor.rotation.y=time*.15;this.reactor.position.y=12+Math.sin(time*.8)*.25;for(let m of this.ambient){m.position.y+=dt*.3;if(m.position.y>22)m.position.y=0}for(const w of this.watchers){w.face.rotation.y=Math.sin(time*.4+w.phase)*.25;}for(const {light,phase} of this.flickerLights)light.intensity=.8+.36*Math.sin(time*1.6+phase)+.35*Math.sin(time*8.3+phase*2);for(const c of this.chests){c.mesh.children.at(-1).rotation.y=time;c.mesh.children.at(-1).position.y=1.7+Math.sin(time*2)*.12;c.mesh.visible=c.cooldown<=0;c.cooldown=Math.max(0,c.cooldown-dt)}this.effects.update(dt);this.muzzleTime=Math.max(0,this.muzzleTime-dt);this.swapTime=Math.max(0,this.swapTime-dt);for(let i=0;i<3;i++){const f=this.guns[i].userData.flash;f.visible=this.muzzleTime>0&&i===this.activeWeapon;f.scale.setScalar((i===1?1.8:i===2?1.3:1)*(.8+Math.random()*.4))}this.muzzleLight.intensity=this.muzzleTime>0?4:0;this.muzzleLight.position.set(.3,-.2,-1.3);this.post.uniforms.time.value=time;this.post.uniforms.impact.value=Math.max(0,this.post.uniforms.impact.value-dt*4)}
+ updateFx(dt,time){this.time=time;if(this.armMixer){this.armMixer.update(dt);if(this.armOneShot&&this.armCurrent&&this.armCurrent.time>=this.armCurrent.getClip().duration-.09){this.playArmIdle(this.armWeapon<0?0:this.armWeapon);}}this.reactor.rotation.y=time*.15;this.reactor.position.y=12+Math.sin(time*.8)*.25;for(let m of this.ambient){m.position.y+=dt*.3;if(m.position.y>22)m.position.y=0}for(const w of this.watchers){w.face.rotation.y=Math.sin(time*.4+w.phase)*.25;}for(const {light,phase} of this.flickerLights)light.intensity=.8+.36*Math.sin(time*1.6+phase)+.35*Math.sin(time*8.3+phase*2);for(const c of this.chests){c.mesh.children.at(-1).rotation.y=time;c.mesh.children.at(-1).position.y=1.7+Math.sin(time*2)*.12;c.mesh.visible=c.cooldown<=0;c.cooldown=Math.max(0,c.cooldown-dt)}this.effects.update(dt);this.muzzleTime=Math.max(0,this.muzzleTime-dt);this.swapTime=Math.max(0,this.swapTime-dt);for(let i=0;i<3;i++){const f=this.guns[i].userData.flash;f.visible=this.muzzleTime>0&&i===this.activeWeapon;f.scale.setScalar((i===1?1.8:i===2?1.3:1)*(.8+Math.random()*.4))}this.muzzleLight.intensity=this.muzzleTime>0?4:0;this.muzzleLight.position.set(.3,-.2,-1.3);this.post.uniforms.time.value=time;this.post.uniforms.impact.value=Math.max(0,this.post.uniforms.impact.value-dt*4)}
  clearFx(){this.effects.clear();this.muzzleTime=0;this.muzzleLight.intensity=0;for(const gun of this.guns)gun.userData.flash.visible=false;this.post.uniforms.impact.value=0;this.post.uniforms.damage.value=0;for(const c of this.chests){c.cooldown=0;c.mesh.visible=true}}
- menu(time){this.gunRoot.visible=false;if(this.viewArms)this.viewArms.visible=false;this.fist.visible=false;this.camera.position.set(38+Math.sin(time*.06)*2,13,42);this.camera.lookAt(-10,6,0);this.camera.fov=65;this.camera.updateProjectionMatrix();this.updateFx(.016,time);this.render()}
+ menu(time){this.gunRoot.visible=false;this.armFrame.visible=false;this.fist.visible=false;this.camera.position.set(38+Math.sin(time*.06)*2,13,42);this.camera.lookAt(-10,6,0);this.camera.fov=65;this.camera.updateProjectionMatrix();this.updateFx(.016,time);this.render()}
  render(){this.post.render(this.scene,this.camera,this.viewScene,this.viewCamera,this.gunRoot.visible)}
 }
