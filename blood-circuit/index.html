@@ -42,6 +42,31 @@
 <div id="death" class="modal hidden"><div class="modal-content death-content"><h2>RUN OVER</h2><div class="death-stats" id="death-stats"></div><div class="shard-earned" id="death-shards"></div><button id="retry-btn" class="primary">REBOOT & RETRY <span>↗</span></button><button id="forge-btn" class="textbtn full">SPEND YOUR SHARDS <span>↗</span></button><button id="home-btn" class="textbtn full">RETURN TO CIRCUIT <span>↗</span></button></div></div>
 <div id="inventory" class="modal hidden"><div class="modal-content wide"><h2>ABILITIES</h2><div id="inventory-list"></div><button class="primary compact" id="inventory-close">RETURN TO ARENA <span>↗</span></button></div></div>
 <div id="error" class="modal hidden"><div class="modal-content"><h2>SIGNAL <span>LOST.</span></h2><p id="error-message"></p><button onclick="location.reload()" class="primary">RECONNECT <span>↗</span></button></div></div>
-<script type="module" src="game.js"></script>
+<script>
+// Show actual startup errors instead of an endlessly spinning connection screen.
+(() => {
+  const boot = document.getElementById('boot');
+  const modal = document.getElementById('error');
+  const message = document.getElementById('error-message');
+  let reported = false;
+  function startupFailure(reason) {
+    if (reported || boot.classList.contains('hidden') || !modal.classList.contains('hidden')) return;
+    reported = true;
+    console.error('[BLOOD//CIRCUIT] Startup failed:', reason);
+    boot.classList.add('hidden');
+    message.textContent = 'Game startup failed: ' + reason + '. Reload to retry. If this continues, check your browser console.';
+    modal.classList.remove('hidden');
+  }
+  window.addEventListener('error', event => {
+    startupFailure(event.error?.message || event.message || 'a required file could not be loaded');
+  });
+  window.addEventListener('unhandledrejection', event => {
+    startupFailure(event.reason?.message || 'a background operation failed');
+  });
+  window.setTimeout(() => startupFailure('initialization timed out'), 15000);
+  window.__bloodCircuitBootError = startupFailure;
+})();
+</script>
+<script type="module" src="game.js" onerror="window.__bloodCircuitBootError?.('the game module could not be loaded')"></script>
 <noscript>This game needs JavaScript enabled.</noscript>
 </body></html>
