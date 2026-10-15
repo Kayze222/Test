@@ -3,37 +3,112 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ZORNHUB</title>
+  <meta name="theme-color" content="#0a0c0b" />
+  <meta name="description" content="Zornhub Arcade - a growing collection of browser games, including BLOOD//CIRCUIT, Pervitin Clicker and CULTUREKILL." />
+  <title>Zornhub Arcade - Games</title>
   <link rel="stylesheet" href="landing.css" />
 </head>
 <body>
-  <div class="container">
-    <h1>Zornhub Arcade</h1>
-    <p>the original west korea basement games</p>
+  <div class="page">
+    <header class="site-header">
+      <a class="wordmark" href="/" aria-label="Zornhub Arcade home">ZORNHUB<span>//</span>ARCADE</a>
+      <nav class="site-nav" aria-label="Main navigation">
+        <a href="#games">All games</a>
+        <a class="nav-highlight" href="https://blood-circuit.vercel.app/">BLOOD//CIRCUIT ↗</a>
+      </nav>
+    </header>
 
-    <button onclick="location.href='zimclicker.html'">🎮 play pervitin clicker</button>
+    <main>
+      <section class="intro" aria-labelledby="page-title">
+        <p class="eyebrow">Zornhub Arcade</p>
+        <h1>Pick a game.<br />Get stuck in.</h1>
+        <p id="page-title">The original West Korea basement games, now all in one place. More games on the way.</p>
+      </section>
 
-    <button onclick="location.href='romainian.html'">🎮 play romaianian sim</button>
+      <section class="featured" aria-labelledby="featured-title">
+        <div class="featured-copy">
+          <span class="featured-label">Featured game · Arena FPS</span>
+          <h2 id="featured-title">BLOOD//<br />CIRCUIT</h2>
+          <p>Fast, brutal arena combat. Master movement, parries, weapon switching and style combos.</p>
+          <a class="launch" href="https://blood-circuit.vercel.app/">
+            Play BLOOD//CIRCUIT <span aria-hidden="true">↗</span>
+          </a>
+        </div>
+        <div class="featured-art" aria-hidden="true">⚡</div>
+      </section>
 
-    <button onclick="location.href='Culturekill/culturekill_v1.html'"> 🔥CULTUREKILL🔥 </button>
+      <section id="games" aria-labelledby="games-title">
+        <div class="section-heading">
+          <h2 id="games-title">More games</h2>
+          <span>Choose one to play</span>
+        </div>
 
-    <button type="button" onclick="location.href='https://bonkrain-q7yq.bolt.host/'">
-      ❤️‍🔥WEST KOREA SIMULATOR!❤️‍🔥
-    </button>
+        <div class="game-grid">
+          <a class="game-card" href="zimclicker.html">
+            <div class="game-card-top">
+              <span class="game-type">Incremental / Clicker</span>
+              <span class="card-arrow" aria-hidden="true">↗</span>
+            </div>
+            <div>
+              <h3>Pervitin Clicker</h3>
+              <p>Click, earn, upgrade and hit the slots.</p>
+            </div>
+          </a>
 
-    <!-- Future games here -->
-    <!-- <button onclick="location.href='othergame.html'">🚀 Play Rave Blast</button> -->
+          <a class="game-card" href="romainian.html">
+            <div class="game-card-top">
+              <span class="game-type">Simulator</span>
+              <span class="card-arrow" aria-hidden="true">↗</span>
+            </div>
+            <div>
+              <h3>Romanian Simulator</h3>
+              <p>Play the original Romanian Sim.</p>
+            </div>
+          </a>
 
-    <h2 style="margin-top: 40px;">CHICKEN JOCKEY</h2>
-    <div class="video-wrapper">
-      <iframe
-        src="https://vidsrc.xyz/embed/movie/tt3566834/"
-        frameborder="0"
-        allowfullscreen
-        width="100%"
-        height="400"
-      ></iframe>
-    </div>
+          <a class="game-card" href="Culturekill/culturekill_v1.html">
+            <div class="game-card-top">
+              <span class="game-type">Arcade</span>
+              <span class="card-arrow" aria-hidden="true">↗</span>
+            </div>
+            <div>
+              <h3>CULTUREKILL</h3>
+              <p>Launch CULTUREKILL.</p>
+            </div>
+          </a>
+
+          <a class="game-card" href="https://bonkrain-q7yq.bolt.host/">
+            <div class="game-card-top">
+              <span class="game-type">Simulator / External</span>
+              <span class="card-arrow" aria-hidden="true">↗</span>
+            </div>
+            <div>
+              <h3>West Korea Simulator</h3>
+              <p>Open the original simulator.</p>
+            </div>
+          </a>
+        </div>
+      </section>
+
+      <details class="extras">
+        <summary>Extras</summary>
+        <div class="extras-inner">
+          <h2>CHICKEN JOCKEY</h2>
+          <div class="video-wrapper">
+            <iframe
+              src="https://vidsrc.xyz/embed/movie/tt3566834/"
+              title="Chicken Jockey"
+              loading="lazy"
+              referrerpolicy="no-referrer"
+              allowfullscreen
+              height="350"
+            ></iframe>
+          </div>
+        </div>
+      </details>
+    </main>
+
+    <footer class="site-footer">ZORNHUB//ARCADE</footer>
   </div>
 </body>
 </html>
