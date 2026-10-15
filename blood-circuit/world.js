@@ -208,10 +208,13 @@ export class World{
    if(!skinned.length||skinned.some(o=>!o.skeleton?.bones?.length))throw new Error('No bound skinned arm meshes');
    this.armFrame.add(gltf.scene);
    this.armRig=gltf.scene;
-   // The source asset is authored around a 1.7m-high FPS camera. Position its
-   // original skeleton (not detached vertices) relative to the view-camera.
+   // The source pack is rigged in Blender's upright (+Y) pose, while the
+   // firearm barrels in this viewmodel point along -Z. Rotate the ENTIRE
+   // skinned hierarchy -90 degrees around local X, preserving bones and clips.
+   // Rebase the former 1.6m source height into the camera's viewmodel space.
    this.armRig.scale.setScalar(.78);
-   this.armRig.position.set(-.22,-1.19,-.31);
+   this.armRig.rotation.set(-Math.PI/2,0,0);
+   this.armRig.position.set(0,-.20,.78);
    this.armMixer=new T.AnimationMixer(this.armRig);
    // Preserve the native skeleton, but use the two wrist chains as IK targets.
    // These are fixed to the *weapon* parent so both hands follow sway/recoil.
@@ -286,11 +289,13 @@ export class World{
  positionRiggedHands(index,parry){
   if(!this.armRig||!this.armJoints)return;
   this.gunRoot.updateMatrixWorld(true);
-  // Offsets in weapon-root coordinates. Right-side hand on grip, other under barrel.
+  // Grip anchors follow the -90 degree rig correction. Keep them close to
+  // the source's natural guard pose: the old targets drove wrists too far
+  // toward the camera, causing inverted elbows and floating forearms.
   const g=[
-   [[.06,-.18,-.13],[-.18,-.09,-.38]],
-   [[.04,-.21,-.13],[-.21,-.12,-.48]],
-   [[.05,-.19,-.12],[-.24,-.12,-.44]]
+   [[.14,-.05,-.44],[-.16,-.02,-.52]],
+   [[.15,-.05,-.44],[-.20,-.02,-.58]],
+   [[.15,-.04,-.48],[-.22,-.02,-.60]]
   ][index];
   this.solveArmGrip(this.armJoints.trigger,new T.Vector3(...g[0]));
   // The support hand is released briefly for a visible parry strike.
