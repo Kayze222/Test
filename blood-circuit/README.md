@@ -11,6 +11,13 @@ A static browser FPS. This folder contains the V3 Expanded Arena source, includi
 
 If working with ChatGPT, ask it to push the finished changes to the connected GitHub repository. Publishing files to a ChatGPT Sites project does not automatically update Vercel.
 
+## Live deployment
+
+- **Site:** https://blood-circuit.vercel.app
+- **Vercel project:** `blood-circuit`
+- **Connected source:** `Kayze222/Test`, folder `blood-circuit/`, branch `main`
+- Updates committed to the production branch should deploy automatically. Keep changes inside this folder to avoid touching other Test projects.
+
 ## Run locally
 
 Serve this folder using any HTTP static server (for example, `python -m http.server 8000`) and visit `http://localhost:8000`. The browser's `file://` mode blocks ESM scripts.
