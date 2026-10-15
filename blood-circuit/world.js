@@ -178,9 +178,9 @@ export class World{
  g.userData.muzzle=new T.Vector3(0,.02,type===0?-.85:type===1?-1.04:-1.22);const flash=new T.Group();flash.position.copy(g.userData.muzzle);for(const [color,size,angle] of [[accent,.27,0],[0xfff6b3,.19,.4],[0xffffff,.1,0]]){const m=new T.Mesh(starGeometry(),new T.MeshBasicMaterial({color,transparent:true,blending:T.AdditiveBlending,depthWrite:false,side:T.DoubleSide}));m.scale.setScalar(size);m.rotation.z=angle;flash.add(m)}flash.visible=false;g.add(flash);g.userData.flash=flash;this.guns.push(g)}
  // The actual skinned GLB is mounted separately in view-camera space and animated.
  // Keep the simple proxy until the asynchronous rig finishes loading.
- this.armFrame=new T.Group();this.viewCamera.add(this.armFrame);this.armFrame.visible=false;
+ this.armFrame=new T.Group();this.gunRoot.add(this.armFrame);this.armFrame.visible=false;
  this.armRig=null;this.armMixer=null;this.armActions=new Map();this.armCurrent=null;
- this.armOneShot=false;this.armWeapon=-1;this.armParryWas=false;
+ this.armOneShot=false;this.armWeapon=-1;this.armParryWas=false;this.armShootTime=0;this.armJoints=null;
  this.fist=new T.Group();this.viewCamera.add(this.fist);this.add('box',0x4a5552,0,0,0,.26,.22,.4,false,this.fist);this.add('box',0xe8ab78,0,.06,-.24,.3,.2,.15,false,this.fist);this.add('box',0xf2dbb0,0,.16,-.2,.29,.04,.2,false,this.fist);this.fist.visible=false;
  }
  async loadRiggedArms(){
@@ -211,8 +211,15 @@ export class World{
    // The source asset is authored around a 1.7m-high FPS camera. Position its
    // original skeleton (not detached vertices) relative to the view-camera.
    this.armRig.scale.setScalar(.78);
-   this.armRig.position.set(-.01,-1.68,-.86);
+   this.armRig.position.set(-.22,-1.19,-.31);
    this.armMixer=new T.AnimationMixer(this.armRig);
+   // Preserve the native skeleton, but use the two wrist chains as IK targets.
+   // These are fixed to the *weapon* parent so both hands follow sway/recoil.
+   const find=(name)=>this.armRig.getObjectByName(name);
+   const trigger=['shoulder.L','upper_arm.L','forearm.L','hand.L'].map(find);
+   const support=['shoulder.R','upper_arm.R','forearm.R','hand.R'].map(find);
+   if(trigger.every(Boolean)&&support.every(Boolean))this.armJoints={trigger,support};
+   else console.warn('[BLOOD//CIRCUIT] Rigged arms: IK unavailable, missing bones');
    for(const clip of gltf.animations){
     if(['finger_gun_idle','guard_idle','knife_idle','finger_gun_fire','push.R','knife_hit_01','jab.L','jab.R','guard_draw'].includes(clip.name)){
      this.armActions.set(clip.name,this.armMixer.clipAction(clip));
@@ -243,18 +250,54 @@ export class World{
  }
  playArmIdle(index,instant=false){
   this.armWeapon=index;
-  this.playArm(['finger_gun_idle','guard_idle','knife_idle'][index]||'guard_idle',false,instant);
+  this.playArm(index===1?'knife_idle':'guard_idle',false,instant);
  }
  triggerArmStrike(type){
   if(!this.armRig)return;
-  const action=type==='parry'?'jab.L':['finger_gun_fire','push.R','knife_hit_01'][this.activeWeapon];
-  this.playArm(action,true);
+  if(type==='parry')this.playArm('jab.R',true);
+  else this.armShootTime=.13;
  }
  setFX(settings){this.reduced=!!settings.reduced;this.effects.reduced=this.reduced;this.post.uniforms.reduced.value=this.reduced?1:0;this.post.uniforms.vhs.value=settings.crt?1:0}
  fireWeapon(index){this.activeWeapon=index;this.triggerArmStrike('shoot');this.muzzleTime=index===1?.085:index===2?.12:.065;this.guns[index].userData.flash.rotation.z=Math.random()*6.28;this.post.uniforms.impact.value=Math.max(this.post.uniforms.impact.value,index===2?.5:.13)}
  muzzlePosition(index){this.viewScene.updateMatrixWorld(true);this.camera.updateMatrixWorld(true);const p=this.guns[index].localToWorld(this.guns[index].userData.muzzle.clone()).applyMatrix4(this.viewCamera.matrixWorldInverse);const view=this.viewCamera.projectionMatrix.elements,world=this.camera.projectionMatrix.elements;p.x*=view[0]/world[0];p.y*=view[5]/world[5];return p.applyMatrix4(this.camera.matrixWorld)}
+ // Small analytic CCD solver. Rotates original shoulder/elbow joints and keeps
+ // the skinned hand bones attached to the same weapon as the model.
+ solveArmGrip(chain,grip){
+  const hand=chain[3];
+  const worldGoal=this.gunRoot.localToWorld(grip.clone());
+  const p=new T.Vector3(),end=new T.Vector3(),a=new T.Vector3(),b=new T.Vector3();
+  const localParent=new T.Quaternion(),delta=new T.Quaternion(),worldDelta=new T.Quaternion();
+  for(let step=0;step<6;step++){
+   for(let j=2;j>=0;j--){
+    const bone=chain[j];
+    bone.getWorldPosition(p);hand.getWorldPosition(end);
+    a.copy(end).sub(p);b.copy(worldGoal).sub(p);
+    if(a.lengthSq()<.000001||b.lengthSq()<.000001)continue;
+    a.normalize();b.normalize();worldDelta.setFromUnitVectors(a,b);
+    bone.parent.getWorldQuaternion(localParent);
+    delta.copy(localParent).invert().multiply(worldDelta).multiply(localParent);
+    bone.quaternion.premultiply(delta).normalize();
+    bone.updateWorldMatrix(false,true);
+   }
+   hand.getWorldPosition(end);
+   if(end.distanceToSquared(worldGoal)<.000035)break;
+  }
+ }
+ positionRiggedHands(index,parry){
+  if(!this.armRig||!this.armJoints)return;
+  this.gunRoot.updateMatrixWorld(true);
+  // Offsets in weapon-root coordinates. Right-side hand on grip, other under barrel.
+  const g=[
+   [[.06,-.18,-.13],[-.18,-.09,-.38]],
+   [[.04,-.21,-.13],[-.21,-.12,-.48]],
+   [[.05,-.19,-.12],[-.24,-.12,-.44]]
+  ][index];
+  this.solveArmGrip(this.armJoints.trigger,new T.Vector3(...g[0]));
+  // The support hand is released briefly for a visible parry strike.
+  if(parry<=0)this.solveArmGrip(this.armJoints.support,new T.Vector3(...g[1]));
+ }
  weaponPose(index,time,moving,recoil,parry,slide,strafe=0){
-  if(index!==this.activeWeapon){this.swapTime=.15;this.activeWeapon=index;}
+  if(index!==this.activeWeapon){this.swapTime=.15;this.activeWeapon=index;if(this.armRig)this.playArmIdle(index);}
   this.gunRoot.visible=true;
   this.guns.forEach((g,i)=>g.visible=i===index);
   const swap=this.swapTime/.15,weight=[1,1.3,.8][index];
@@ -265,11 +308,14 @@ export class World{
   if(pump)pump.position.z=-.53+Math.sin(Math.min(1,recoil/1.6)*Math.PI)*.18;
   if(this.armRig){
    this.armFrame.visible=true;
-   this.armFrame.position.set(-.045+Math.sin(time*10)*moving*.012,-.025+Math.abs(Math.sin(time*10))*moving*.016-(slide?.075:0)-swap*.14,Math.min(.12,recoil*.07));
-   this.armFrame.rotation.set(recoil*.045,-recoil*.025,strafe*.025);
+   // Camera sway and recoil now belong to the shared gunRoot, not two
+   // independently moving models. Avoid offsets drifting the hands apart.
+   this.armFrame.position.set(0,0,0);
+   this.armFrame.rotation.set(0,0,0);
    if(this.armWeapon!==index&&!this.armOneShot)this.playArmIdle(index);
    if(parry>0&&!this.armParryWas)this.triggerArmStrike('parry');
    this.armParryWas=parry>0;
+   this.positionRiggedHands(index,parry);
   }
   this.fist.visible=parry>0&&!this.armRig;
   if(this.fist.visible){const v=Math.sin(Math.min(1,parry/.35)*Math.PI);this.fist.position.set(-.4,-.33+v*.17,-.7-v*.44);this.fist.rotation.set(-.2-v*.3,0,-v*.2);}
@@ -283,7 +329,7 @@ export class World{
  hitEnemy(e){e.mesh.userData.flashUntil=this.time+.065}
  parryBurst(pos){this.effects.parry(pos);this.post.uniforms.impact.value=1}
  explosion(pos,color=0xff5428,size=1){this.effects.explosion(pos,color,size);this.post.uniforms.impact.value=Math.max(this.post.uniforms.impact.value,.7)}
- updateFx(dt,time){this.time=time;if(this.armMixer){this.armMixer.update(dt);if(this.armOneShot&&this.armCurrent&&this.armCurrent.time>=this.armCurrent.getClip().duration-.09){this.playArmIdle(this.armWeapon<0?0:this.armWeapon);}}this.reactor.rotation.y=time*.15;this.reactor.position.y=12+Math.sin(time*.8)*.25;for(let m of this.ambient){m.position.y+=dt*.3;if(m.position.y>22)m.position.y=0}for(const w of this.watchers){w.face.rotation.y=Math.sin(time*.4+w.phase)*.25;}for(const {light,phase} of this.flickerLights)light.intensity=.8+.36*Math.sin(time*1.6+phase)+.35*Math.sin(time*8.3+phase*2);for(const c of this.chests){c.mesh.children.at(-1).rotation.y=time;c.mesh.children.at(-1).position.y=1.7+Math.sin(time*2)*.12;c.mesh.visible=c.cooldown<=0;c.cooldown=Math.max(0,c.cooldown-dt)}this.effects.update(dt);this.muzzleTime=Math.max(0,this.muzzleTime-dt);this.swapTime=Math.max(0,this.swapTime-dt);for(let i=0;i<3;i++){const f=this.guns[i].userData.flash;f.visible=this.muzzleTime>0&&i===this.activeWeapon;f.scale.setScalar((i===1?1.8:i===2?1.3:1)*(.8+Math.random()*.4))}this.muzzleLight.intensity=this.muzzleTime>0?4:0;this.muzzleLight.position.set(.3,-.2,-1.3);this.post.uniforms.time.value=time;this.post.uniforms.impact.value=Math.max(0,this.post.uniforms.impact.value-dt*4)}
+ updateFx(dt,time){this.time=time;if(this.armMixer){this.armMixer.update(dt);this.armShootTime=Math.max(0,this.armShootTime-dt);if(this.armOneShot&&this.armCurrent&&this.armCurrent.time>=this.armCurrent.getClip().duration-.09){this.playArmIdle(this.armWeapon<0?0:this.armWeapon);}}this.reactor.rotation.y=time*.15;this.reactor.position.y=12+Math.sin(time*.8)*.25;for(let m of this.ambient){m.position.y+=dt*.3;if(m.position.y>22)m.position.y=0}for(const w of this.watchers){w.face.rotation.y=Math.sin(time*.4+w.phase)*.25;}for(const {light,phase} of this.flickerLights)light.intensity=.8+.36*Math.sin(time*1.6+phase)+.35*Math.sin(time*8.3+phase*2);for(const c of this.chests){c.mesh.children.at(-1).rotation.y=time;c.mesh.children.at(-1).position.y=1.7+Math.sin(time*2)*.12;c.mesh.visible=c.cooldown<=0;c.cooldown=Math.max(0,c.cooldown-dt)}this.effects.update(dt);this.muzzleTime=Math.max(0,this.muzzleTime-dt);this.swapTime=Math.max(0,this.swapTime-dt);for(let i=0;i<3;i++){const f=this.guns[i].userData.flash;f.visible=this.muzzleTime>0&&i===this.activeWeapon;f.scale.setScalar((i===1?1.8:i===2?1.3:1)*(.8+Math.random()*.4))}this.muzzleLight.intensity=this.muzzleTime>0?4:0;this.muzzleLight.position.set(.3,-.2,-1.3);this.post.uniforms.time.value=time;this.post.uniforms.impact.value=Math.max(0,this.post.uniforms.impact.value-dt*4)}
  clearFx(){this.effects.clear();this.muzzleTime=0;this.muzzleLight.intensity=0;for(const gun of this.guns)gun.userData.flash.visible=false;this.post.uniforms.impact.value=0;this.post.uniforms.damage.value=0;for(const c of this.chests){c.cooldown=0;c.mesh.visible=true}}
  menu(time){this.gunRoot.visible=false;this.armFrame.visible=false;this.fist.visible=false;this.camera.position.set(38+Math.sin(time*.06)*2,13,42);this.camera.lookAt(-10,6,0);this.camera.fov=65;this.camera.updateProjectionMatrix();this.updateFx(.016,time);this.render()}
  render(){this.post.render(this.scene,this.camera,this.viewScene,this.viewCamera,this.gunRoot.visible)}
