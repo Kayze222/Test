@@ -49,7 +49,14 @@ export class SpriteViewmodel {
   const lower=switching?12*Math.sin(Math.PI*(1-Math.max(0,this.swapUntil-now)/180)):0;
   ctx.save();ctx.translate(256+x,192+y+kick+lower);
   ctx.rotate(this.reduced?0:Math.sin(t*6)*moving*.004-strafe*.009);
-  if(draw){ctx.drawImage(draw,-256,-192,512,384)}
+  if(draw){
+   // Original F1/F2/F3 pistol sprites are tightly cropped. Keep them centred,
+   // bottom-aligned and pixel-scaled without affecting the other weapons.
+   if(index===0 && draw.naturalWidth<512){
+    const w=156, h=Math.round(draw.naturalHeight*w/draw.naturalWidth);
+    ctx.drawImage(draw,-w/2,192-h,w,h);
+   }else ctx.drawImage(draw,-256,-192,512,384);
+  }
   else { // Non-fatal fallback while the transparent PNGs load.
    ctx.fillStyle='#303b45';ctx.fillRect(-22,80,44,145);ctx.fillStyle='#a66b4c';ctx.fillRect(-75,135,44,84);ctx.fillRect(30,135,44,84);
   }
