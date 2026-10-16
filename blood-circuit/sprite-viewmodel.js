@@ -18,14 +18,15 @@ export class SpriteViewmodel {
   this.ctx.imageSmoothingEnabled=false;
   this.images=new Map();
   for(let i=0;i<3;i++)for(const frame of FRAMES)this.load(`weapon${i}_${frame}`);
+  this.load('shotgun_atlas');
   for(const frame of ['idle','strike','recover'])this.load('fists_'+frame);
   this.weapon=0;this.previous=0;this.swapUntil=0;this.fireUntil=0;this.firingAt=0;this.parryUntil=0;this.reduced=false;
   this.visible=false;this.lastPoseTime=0;this.lastDraw='';
  }
- load(key){const img=new Image();img.decoding='async';img.src=`${BASE}${key}.png`;img.onload=()=>this.redrawLast();img.onerror=()=>console.warn('[BLOOD//CIRCUIT] Viewmodel sprite unavailable:',key);this.images.set(key,img)}
+ load(key){const img=new Image();img.decoding='async';img.src=`${BASE}${key}${key==='shotgun_atlas'?'.webp':'.png'}`;img.onload=()=>this.redrawLast();img.onerror=()=>console.warn('[BLOOD//CIRCUIT] Viewmodel sprite unavailable:',key);this.images.set(key,img)}
  redrawLast(){if(this.visible)this.pose(...(this.lastArgs||[this.weapon,0,0,0,0,false,0]))}
  setVisible(value){this.visible=!!value;this.canvas.style.display=this.visible?'block':'none';if(!value)this.ctx.clearRect(0,0,512,384)}
- fire(index){this.weapon=index;this.firingAt=performance.now();this.fireUntil=this.firingAt+([135,240,290][index]);}
+ fire(index){this.weapon=index;this.firingAt=performance.now();this.fireUntil=this.firingAt+([135,780,290][index]);}
  parry(){this.parryUntil=performance.now()+190}
  pose(index,time,moving,recoil,parry,slide,strafe=0){
   this.lastArgs=[index,time,moving,recoil,parry,slide,strafe];
@@ -34,7 +35,7 @@ export class SpriteViewmodel {
   if(index!==this.weapon){this.previous=this.weapon;this.weapon=index;this.swapUntil=now+180;}
   let key=`weapon${index}_idle`,switching=now<this.swapUntil,attacking=now<this.fireUntil;
   if(now<this.parryUntil)key='fists_strike';
-  else if(attacking){const t=(now-this.firingAt)/([135,240,290][index]);key=`weapon${index}_${t<.50?'shoot':'recover'}`;}
+  else if(attacking){const t=(now-this.firingAt)/([135,780,290][index]);key=`weapon${index}_${t<.50?'shoot':'recover'}`;}
   else if(switching){key=`weapon${now<this.swapUntil-100?this.previous:index}_lower`}
   // Animate the baked frames as a whole, keeping weapon AND hands perfectly aligned.
   const ctx=this.ctx;ctx.clearRect(0,0,512,384);
@@ -45,11 +46,19 @@ export class SpriteViewmodel {
   const bob=this.reduced?0:moving*3.8;
   const x=this.reduced?0:Math.sin(t*10)*bob+strafe*3.4;
   const y=this.reduced?0:Math.abs(Math.cos(t*10))*bob+(slide?20:0);
-  const kick=(attacking&&!this.reduced)?(1-(now-this.firingAt)/([135,240,290][index]))*8:Math.min(8,Math.max(0,recoil*4));
+  const kick=(attacking&&!this.reduced)?(1-(now-this.firingAt)/([135,780,290][index]))*8:Math.min(8,Math.max(0,recoil*4));
   const lower=switching?12*Math.sin(Math.PI*(1-Math.max(0,this.swapUntil-now)/180)):0;
   ctx.save();ctx.translate(256+x,192+y+kick+lower);
   ctx.rotate(this.reduced?0:Math.sin(t*6)*moving*.004-strafe*.009);
-  if(draw){
+  const atlas=this.images.get('shotgun_atlas');
+  const shotgunReady=index===1&&now>=this.parryUntil&&atlas?.complete&&atlas.naturalWidth===1190;
+  if(shotgunReady){
+   // Atlas columns: idle, fire1, fire2, reload1, reload2, reload3, reload4.
+   const sequence=[1,2,3,4,5,6,5,4,3,0];
+   const frame=attacking?sequence[Math.min(sequence.length-1,Math.max(0,Math.floor((now-this.firingAt)/780*sequence.length)))]:switching?3:0;
+   const w=220,h=Math.round(190*w/170);
+   ctx.drawImage(atlas,frame*170,0,170,190,-w/2,192-h,w,h);
+  }else if(draw){
    // Original F1/F2/F3 pistol sprites are tightly cropped. Keep them centred,
    // bottom-aligned and pixel-scaled without affecting the other weapons.
    if(index===0 && draw.naturalWidth<512){
