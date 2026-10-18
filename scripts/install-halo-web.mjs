@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url';
 
 const TAG = 'build-235';
 const EXPECTED_SHA256 = '7bbeabddcb8f694dd96bcac948faf7dacbe6cd1fb3e2568c3a5d14178e8eb9f8';
-const URL = 'https://github.com/OpenCommunityEdition/OpenCE/releases/download/' + TAG + '/halo-web-release.zip';
+const DOWNLOAD_URL = 'https://github.com/OpenCommunityEdition/OpenCE/releases/download/' + TAG + '/halo-web-release.zip';
 const OUTPUT = resolve(fileURLToPath(new URL('../dist/halo/engine/', import.meta.url)));
 
 async function findWebRoot(folder, depth = 0) {
@@ -39,7 +39,7 @@ async function main() {
   const temp = await mkdtemp(join(tmpdir(), 'zornhub-opence-'));
   try {
     console.log('[OpenCE] Downloading pinned engine release ' + TAG);
-    const response = await fetch(URL, {
+    const response = await fetch(DOWNLOAD_URL, {
       headers: { 'User-Agent': 'Zornhub-OpenCE-Stage1' },
       redirect: 'follow',
       signal: AbortSignal.timeout(90000),
