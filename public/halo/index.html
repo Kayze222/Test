@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1011">
+  <title>Halo CE | Zornhub Lab</title>
+  <meta name="description" content="Original Halo Combat Evolved browser-engine integration preview at Zornhub Arcade.">
+  <style>
+    :root { color-scheme: dark; font-family: Consolas, "Courier New", monospace; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; color: #d9f5e3; background: radial-gradient(ellipse at 65% 10%, #17382a 0, transparent 48%), #070b0c; }
+    body::before { content: ""; position: fixed; inset: 0; pointer-events: none; opacity: .13; background: repeating-linear-gradient(0deg, transparent 0px, transparent 3px, #9bdca9 4px); }
+    a { color: inherit; }
+    .wrap { max-width: 1060px; margin: auto; padding: 28px 24px 80px; position: relative; }
+    .top { display: flex; justify-content: space-between; gap: 24px; align-items: center; flex-wrap: wrap; font-size: 13px; letter-spacing: .08em; }
+    .home { text-decoration: none; color: #83efa7; border: 1px solid #3f6650; border-radius: 4px; padding: 12px 16px; }
+    .eyebrow { color: #80b89b; font-size: 13px; text-transform: uppercase; letter-spacing: .25em; }
+    h1 { font-size: clamp(54px, 10vw, 132px); letter-spacing: -.065em; line-height: .88; margin: 58px 0 25px; color: #ecfff0; text-shadow: 0 0 45px #295a46; }
+    h1 span { color: #7eed9e; }
+    .intro { max-width: 710px; font-family: Arial, sans-serif; font-size: 19px; line-height: 1.6; color: #c6d5cc; }
+    .notice { margin-top: 30px; padding: 18px 22px; border: 1px solid #658f73; border-left: 4px solid #8cea9f; background: #101f18; font-family: Arial, sans-serif; line-height: 1.55; }
+    .notice strong { display: block; margin-bottom: 6px; color: #ddffe5; }
+    .panel { margin-top: 34px; border: 1px solid #335a43; padding: 24px; background: #0b1411e8; }
+    h2 { margin: 0 0 20px; font-size: 18px; letter-spacing: .12em; }
+    .checks { display: grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); gap: 10px; }
+    .check { background: #142019; border: 1px solid #254632; padding: 16px; min-height: 92px; }
+    .check small { display: block; color: #94b9a0; font-size: 12px; margin-bottom: 12px; }
+    .check strong { font-family: Arial, sans-serif; font-size: 15px; font-weight: 600; }
+    .ok { color: #7ceda1; } .warn { color: #ffcf8d; }
+    .actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 24px; align-items: center; }
+    .action { text-decoration: none; padding: 14px 19px; font-size: 13px; text-transform: uppercase; background: #7ded9c; color: #08140b; border: 1px solid #a2ffb8; font-weight: 800; border-radius: 3px; }
+    .action[aria-disabled="true"] { opacity: .4; pointer-events: none; }
+    .minor { color: #9dc1a9; font-size: 13px; font-family: Arial, sans-serif; }
+    .footer { margin-top: 34px; color: #789985; font-size: 12px; line-height: 1.6; }
+    @media (max-width: 650px) { h1 { margin-top: 35px; } .intro { font-size: 16px; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="top">
+      <div>ZORNHUB // EXPERIMENTAL GAME LAB</div>
+      <a class="home" href="/">← BACK TO ARCADE</a>
+    </header>
+    <main>
+      <p class="eyebrow" style="margin-top:55px">Authentic engine integration / Stage 01</p>
+      <h1>HALO<span> CE</span></h1>
+      <p class="intro">The original Halo: Combat Evolved engine, compiled to run in a browser through OpenCE. This is the genuine engine integration, not a recreation.</p>
+      <section class="notice" role="status" aria-live="polite">
+        <strong>ENGINE PREVIEW ONLY - NOT A PLAYABLE RELEASE</strong>
+        Zornhub is preparing a one-click experience. The Halo retail game assets are not bundled or automatically served because public redistribution permission has not been established. There is no user file-upload requirement in the planned final experience.
+      </section>
+      <section class="panel" aria-labelledby="status-title">
+        <h2 id="status-title">SYSTEM CHECK</h2>
+        <div class="checks">
+          <div class="check"><small>ENGINE WEB BUILD</small><strong id="engine">Checking...</strong></div>
+          <div class="check"><small>CROSS-ORIGIN ISOLATION</small><strong id="isolation">Checking...</strong></div>
+          <div class="check"><small>GRAPHICS / WEBGL 2</small><strong id="graphics">Checking...</strong></div>
+          <div class="check"><small>SHARED MEMORY</small><strong id="memory">Checking...</strong></div>
+        </div>
+        <div class="actions">
+          <a class="action" id="inspect" href="/halo/engine/" aria-disabled="true">INSPECT OPENCE ENGINE ↗</a>
+          <span class="minor">Developer diagnostics only. The unmodified engine may request game files during testing.</span>
+        </div>
+      </section>
+      <p class="footer">OpenCE is an independent community project. Halo and related game assets belong to their respective rights holders. This preview distributes only the open-source runtime, and no Halo map, sound, model, or texture data.</p>
+    </main>
+  </div>
+  <script src="/halo/status.js" type="module"></script>
+</body>
+</html>

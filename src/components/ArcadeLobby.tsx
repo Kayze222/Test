@@ -54,6 +54,11 @@ export const ArcadeLobby: React.FC<ArcadeLobbyProps> = ({
           </span>
         </a>
 
+        {/* Standalone, preview-only authentic OpenCE engine: no game assets bundled */}
+        <a className="arcade-btn" href="/halo/" onClick={() => soundManager.play('click')}>
+          HALO CE <span style={{ fontSize: '0.7em', color: '#b9eac7', marginLeft: 8 }}>[ENGINE PREVIEW]</span>
+        </a>
+
         <button
           className="arcade-btn"
           onClick={() => {
