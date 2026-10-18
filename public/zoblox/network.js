@@ -70,7 +70,11 @@ export function createLegacyRoom(lib, lobby, requestedName) {
   const action = connection.makeAction('game');
   const peers = { [clientId]: { username } };
   const presence = {};
-  let ownPresence = {};
+  let ownPresence = {
+    position: { x: 0, y: 0, z: 0 },
+    rotation: { _x: 0, _y: 0, _z: 0 },
+    isMoving: false, isJumping: false
+  };
   let presenceListener = null;
   let closed = false;
   const adapter = {
