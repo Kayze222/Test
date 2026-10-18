@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#121010"><meta name="description" content="BLOOD//CIRCUIT - a kinetic, style-driven cyber-hell arena FPS."><title>BLOOD//CIRCUIT</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23121010'/%3E%3Cpath d='M52 8 18 57h26l-8 35 46-55H55z' fill='%23fb4839'/%3E%3C/svg%3E"><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="arcade.css"><link rel="stylesheet" href="vhs.css"></head>
+<body>
+<div id="world"></div><div id="scanlines"></div><div id="vhs-tracking" aria-hidden="true"></div><div id="vignette"></div><div id="damage-flash"></div><div id="parry-flash"></div><div id="speed-lines"></div><div id="impact-star"></div><div id="blood-edge"></div>
+<div id="boot" class="boot"><span class="mono">CONNECTING TO THE CIRCUIT</span><div class="loadline"></div></div>
+<div id="shell" class="shell">
+
+<div class="menu-currency" aria-label="Blood shards">◆ <b class="shard-total">0</b><span>SHARDS</span></div>
+<main id="home" class="home panel">
+<div class="menu-main">
+<h1 class="game-logo" aria-label="Blood Circuit"><a href="#" id="brand"><span>BLOOD<span class="logo-slashes">//</span></span><strong>CIRCUIT</strong></a></h1>
+<nav class="menu-nav" aria-label="Main menu">
+<button id="start-btn" class="menu-button selected"><strong>DESCEND</strong></button>
+<button id="practice-btn" class="menu-button"><strong>PRACTICE</strong></button>
+<button data-panel="upgrades" class="menu-button"><strong>BLOOD FORGE</strong></button>
+<button data-panel="armory" class="menu-button"><strong>ARSENAL</strong></button>
+<button data-panel="settings" class="menu-button"><strong>OPTIONS</strong></button>
+</nav></div>
+<div class="menu-scene" aria-hidden="true"></div><div class="menu-records"><div><span>BEST SCORE</span><b id="home-best">000000</b></div><div><span>BEST WAVE</span><b id="home-wave">00</b></div></div>
+</main>
+<section id="upgrades" class="subpanel panel hidden"><button class="back" data-panel="home">← BACK TO CIRCUIT</button><div class="section-heading"><div><h2>BLOOD <span>FORGE</span></h2></div></div><div id="meta-cards" class="cards"></div><div class="records"><div><span>BEST SCORE</span><b id="best-score">0</b></div><div><span>DEEPEST WAVE</span><b id="best-wave">0</b></div><div><span>TOTAL RUNS</span><b id="total-runs">0</b></div></div><p class="save-note" id="save-note">Progress saves automatically in this browser.</p></section>
+<section id="armory" class="subpanel panel hidden"><button class="back" data-panel="home">← BACK TO CIRCUIT</button><h2>ARSENAL</h2><div class="cards arsenal"><article class="card"><span class="overline">01 / PRECISION</span><div class="weapon-illustration revolver"></div><h3>THE VERDICT</h3><p>Accurate, fast revolver. Toss a coin with Q, then shoot it to redirect a powerful hit into an enemy.</p><footer><kbd>1</kbd><span>40 DAMAGE · COIN RICOCHET</span></footer></article><article class="card"><span class="overline">02 / CLOSE QUARTERS</span><div class="weapon-illustration shotgun"></div><h3>THE MAULER</h3><p>Eight-pellet shotgun. Close the gap, fire, then switch. A point-blank blast is devastating.</p><footer><kbd>2</kbd><span>8 × 14 DAMAGE · WIDE SPREAD</span></footer></article><article class="card"><span class="overline">03 / ANNIHILATION</span><div class="weapon-illustration railgun"></div><h3>THE EXECUTIONER</h3><p>A piercing rail beam. Line up your targets. Recharges independently while you use other weapons.</p><footer><kbd>3</kbd><span>150 DAMAGE · 4 SEC RECHARGE</span></footer></article></div></section>
+<section id="how" class="subpanel panel hidden"><button class="back" data-panel="home">← BACK TO CIRCUIT</button><h2>CONTROLS</h2><div class="manual-grid"><article><b class="manual-num">01</b><h3>MOVE</h3><p><kbd>W A S D</kbd> move · Mouse to aim<br><kbd>SPACE</kbd> jump / double jump<br><kbd>SHIFT</kbd> dash with brief invulnerability<br><kbd>CTRL</kbd> or <kbd>C</kbd> slide / airborne ground slam<br><span class="muted">Strafe in the air to curve your jump. Gold floor pads launch you.</span></p></article><article><b class="manual-num">02</b><h3>COMBINE</h3><p><kbd>LMB</kbd> fire · <kbd>1 2 3</kbd> / Wheel switch<br><kbd>F</kbd> or <kbd>RMB</kbd> parry / punch<br><kbd>Q</kbd> coin · <kbd>G</kbd> grapple<br><kbd>R</kbd> shock pulse<br><span class="muted">Cyan shots can be parried just before impact. A successful parry heals you and reflects the shot. Red boss rings must be jumped.</span></p></article><article><b class="manual-num">03</b><h3>EVOLVE</h3><p><kbd>E</kbd> open a nearby gold chest<br><kbd>N</kbd> start the next wave early<br><kbd>TAB</kbd> inspect items · <kbd>ESC</kbd> pause<br><span class="muted">Gold buys random, stackable perks. Shards earned on wave clears are banked immediately. Spend them at the Blood Forge between runs.</span></p></article></div><button class="primary compact" id="manual-practice">ENTER PRACTICE <span>↗</span></button></section>
+<section id="settings" class="subpanel panel hidden"><button class="back" data-panel="home">← BACK TO CIRCUIT</button><h2>OPTIONS</h2><div class="settings-grid"><label>Sound <button id="sound-btn" class="sound-toggle" type="button">SFX ON</button></label><label>Mouse sensitivity <output id="sens-value">1.0</output><input id="sensitivity" type="range" min="0.3" max="2.5" step="0.1" value="1"></label><label>Master volume <output id="vol-value">50%</output><input id="volume" type="range" min="0" max="100" value="50"></label><label>VHS signal / scanlines <input type="checkbox" id="crt" checked></label><label>Reduced screen effects <input type="checkbox" id="reduced"></label><label>Blood particles <input type="checkbox" id="gore" checked></label><label>Show damage numbers <input type="checkbox" id="numbers" checked></label></div><button data-panel="how" class="settings-controls" type="button">CONTROLS ↗</button><p class="save-note">Reduced effects limits camera shake and flashes.</p></section>
+
+</div>
+<div id="hud" class="hidden">
+<div class="hud-top"><div class="sector"><b>BLOOD<span>//</span>CIRCUIT</b><small id="sector-label">SURVIVAL</small></div><div class="wave-hud"><span>WAVE</span><b id="wave-number">01</b><small id="enemies-left">6 HOSTILES</small></div><div class="run-currency"><div><span class="gold">◇</span> <b id="gold">0</b></div><div><span class="red">◆</span> <b id="run-shards">0</b></div><small id="run-clock">00:00</small></div></div>
+<div id="boss-hud" class="hidden"><div><span>THE TITHE COLLECTOR</span><b id="boss-pct">100%</b></div><div class="boss-track"><i id="boss-fill"></i></div></div>
+<div class="style-hud" id="style-panel"><div class="rank-line"><div id="style-rank">D</div><b id="style-name">DORMANT</b></div><div class="style-track"><i id="style-fill"></i></div><div class="multiplier-line"><strong id="style-mult">×1.00</strong></div><div id="style-events"></div><div class="freshness hidden" id="fresh-label"></div><div class="score-label">SCORE <b id="score">0</b></div></div>
+<div id="crosshair"><i></i><i></i><i></i><i></i><b></b></div><div id="hitmarker">×</div><div id="damage-numbers"></div>
+<div id="combat-callout"></div><div id="loot-popup" class="hidden"><div id="loot-icon">✳</div><div><small id="loot-rarity"></small><strong id="loot-name"></strong><p id="loot-desc"></p></div><b id="loot-stack"></b></div><div id="banner"><small id="banner-sub"></small><b id="banner-title"></b></div><div id="toast"></div><div id="interact"></div>
+<div id="hud-bottom">
+<div class="combat-left"><div class="vitals"><div class="vessel-portrait"><svg viewBox="0 0 64 70" aria-hidden="true"><path d="M10 5h44l6 18-8 25-8 17H20L9 46 4 23z" fill="#303f54" stroke="#71c2ff" stroke-width="2"/><path d="m9 20 22 7L54 17l-4 17-17 8-20-9z" fill="#10182a"/><path d="m12 22 18 5 21-7-3 8-17 6-16-5z" fill="#fcff54"/><path d="m20 42 12 5 11-6-5 17H27z" fill="#8abaff"/><path d="M32 5v16M13 39l9 7M49 37l-7 8" stroke="#71c2ff" stroke-width="3"/></svg><span>V-001</span></div><div class="vital-data"><div class="health-title"><span>HEALTH</span><span id="health-state">OPERATIONAL</span></div><div class="health-numbers"><b id="health">100</b><span>/ <i id="max-health">100</i></span><small>+</small></div><div class="health-track"><i id="health-ghost"></i><i id="health-fill"></i></div></div></div>
+<div class="dash-row"><span>STAMINA</span><div class="dash-cells"><i id="dash1"></i><i id="dash2"></i><i id="dash3"></i></div><b id="speed-readout">0 M/S</b></div>
+<div class="weapons"><div class="weapon-slot active" id="weapon0"><span>1</span><svg viewBox="0 0 100 40" aria-hidden="true"><path d="M10 8h20V5h61v11H47v12H31l-6 10H11l7-21h-8zm24 10v7h8v-7z" fill="currentColor"/></svg><b>VERDICT</b><i>∞</i><div class="cooldown"><em></em></div></div><div class="weapon-slot" id="weapon1"><span>2</span><svg viewBox="0 0 100 40" aria-hidden="true"><path d="M6 8h88v6H39v4h55v5H37l-5 7H20l-5 9H5l8-22H6zm42 17h27v5H48z" fill="currentColor"/></svg><b>MAULER</b><i>∞</i><div class="cooldown"><em></em></div></div><div class="weapon-slot" id="weapon2"><span>3</span><svg viewBox="0 0 100 40" aria-hidden="true"><path d="M8 8h22V4h48v4h17v16H78v4H35l-9 11H12l6-20H8z" fill="currentColor"/><path d="M40 10v12m10-12v12m10-12v12m10-12v12" stroke="#08121b" stroke-width="4"/></svg><b>EXECUTIONER</b><i>↯</i><div class="cooldown"><em></em></div></div></div></div>
+<div class="bottom-hint hidden"><span id="quick-tip"></span><small id="phase-hint"></small></div>
+<div class="ability-rack"><div class="ability" id="parry-ability"><div class="ability-symbol">✦</div><div><span>PARRY</span><strong id="parry-status">READY</strong></div><kbd>F / RMB</kbd><i id="parry-fill"></i></div><div class="ability" id="coin-ability"><div class="ability-symbol coin-symbol">◈</div><div><span>COIN</span><strong id="coin-status">READY</strong></div><kbd>Q</kbd><i id="coin-fill"></i></div><div class="ability" id="grapple-ability"><div class="ability-symbol">↗</div><div><span>GRAPPLE</span><strong id="grapple-status">READY</strong></div><kbd>G</kbd><i id="grapple-fill"></i></div><div class="ability" id="pulse-ability"><div class="ability-symbol">ϟ</div><div><span>PULSE</span><strong id="pulse-status">READY</strong></div><kbd>R</kbd><i id="pulse-fill"></i></div></div>
+</div><div id="item-strip"></div><div id="practice-label" class="hidden">PRACTICE / NO PROGRESSION <span>ESC TO LEAVE</span></div>
+</div>
+<div id="pause" class="modal hidden"><div class="modal-content"><h2>PAUSED</h2><p id="pause-message">The arena is paused.</p><button id="resume-btn" class="primary">RESUME <span>↗</span></button><button class="textbtn full" id="pause-settings">SETTINGS <span>↗</span></button><button class="textbtn full" id="quit-btn">END RUN & RETURN <span>↗</span></button></div></div>
+<div id="death" class="modal hidden"><div class="modal-content death-content"><h2>RUN OVER</h2><div class="death-stats" id="death-stats"></div><div class="shard-earned" id="death-shards"></div><button id="retry-btn" class="primary">REBOOT & RETRY <span>↗</span></button><button id="forge-btn" class="textbtn full">SPEND YOUR SHARDS <span>↗</span></button><button id="home-btn" class="textbtn full">RETURN TO CIRCUIT <span>↗</span></button></div></div>
+<div id="inventory" class="modal hidden"><div class="modal-content wide"><h2>ABILITIES</h2><div id="inventory-list"></div><button class="primary compact" id="inventory-close">RETURN TO ARENA <span>↗</span></button></div></div>
+<div id="error" class="modal hidden"><div class="modal-content"><h2>SIGNAL <span>LOST.</span></h2><p id="error-message"></p><button onclick="location.reload()" class="primary">RECONNECT <span>↗</span></button></div></div>
+<script>
+// Show actual startup errors instead of an endlessly spinning connection screen.
+(() => {
+  const boot = document.getElementById('boot');
+  const modal = document.getElementById('error');
+  const message = document.getElementById('error-message');
+  let reported = false;
+  function startupFailure(reason) {
+    if (reported || boot.classList.contains('hidden') || !modal.classList.contains('hidden')) return;
+    reported = true;
+    console.error('[BLOOD//CIRCUIT] Startup failed:', reason);
+    boot.classList.add('hidden');
+    message.textContent = 'Game startup failed: ' + reason + '. Reload to retry. If this continues, check your browser console.';
+    modal.classList.remove('hidden');
+  }
+  window.addEventListener('error', event => {
+    startupFailure(event.error?.message || event.message || 'a required file could not be loaded');
+  });
+  window.addEventListener('unhandledrejection', event => {
+    startupFailure(event.reason?.message || 'a background operation failed');
+  });
+  window.setTimeout(() => startupFailure('initialization timed out'), 15000);
+  window.__bloodCircuitBootError = startupFailure;
+})();
+</script>
+<script type="module" src="game.js" onerror="window.__bloodCircuitBootError?.('the game module could not be loaded')"></script>
+<noscript>This game needs JavaScript enabled.</noscript>
+</body></html>

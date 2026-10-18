@@ -3,39 +3,25 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ZORNHUB</title>
-  <link rel="stylesheet" href="landing.css" />
+  <title>Zornhub Arcade</title>
+  <meta name="description" content="Zornhub Arcade - The original West Korea basement games collection including Zim Clicker, Romanian Simulator, Blood Circuit, and Battle Anyone." />
+  <meta property="og:title" content="Zornhub Arcade" />
+  <meta property="og:description" content="Zornhub Arcade - The original West Korea basement games collection including Zim Clicker, Romanian Simulator, Blood Circuit, and Battle Anyone." />
+  <link rel="icon" href="/brain_icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=VT323&family=Source+Sans+Pro:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    @font-face {
+      font-family: 'UndertaleDeltarune';
+      src: url('/undertale-deltarune-text-font-extended.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+  </style>
 </head>
-<body>
-  <div class="container">
-    <h1>Zornhub Arcade</h1>
-    <p>the original west korea basement games</p>
-
-    <button onclick="location.href='https://blood-circuit.vercel.app/'">🎮 play BLOOD//CIRCUIT</button>
-
-    <button onclick="location.href='zimclicker.html'">🎮 play pervitin clicker</button>
-
-    <button onclick="location.href='romainian.html'">🎮 play romaianian sim</button>
-
-    <button onclick="location.href='Culturekill/culturekill_v1.html'"> 🔥CULTUREKILL🔥 </button>
-
-    <button type="button" onclick="location.href='https://bonkrain-q7yq.bolt.host/'">
-      ❤️‍🔥WEST KOREA SIMULATOR!❤️‍🔥
-    </button>
-
-    <!-- Future games here -->
-    <!-- <button onclick="location.href='othergame.html'">🚀 Play Rave Blast</button> -->
-
-    <h2 style="margin-top: 40px;">CHICKEN JOCKEY</h2>
-    <div class="video-wrapper">
-      <iframe
-        src="https://vidsrc.xyz/embed/movie/tt3566834/"
-        frameborder="0"
-        allowfullscreen
-        width="100%"
-        height="400"
-      ></iframe>
-    </div>
-  </div>
+<body class="bg-[#121014] text-white overflow-x-hidden">
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
 </body>
 </html>

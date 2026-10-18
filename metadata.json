@@ -1,0 +1,7 @@
+{
+  "name": "Zornhub Arcade",
+  "description": "Zornhub Arcade - The original West Korea basement games collection including Zim Clicker, Romanian Simulator, Blood Circuit, and Battle Anyone.",
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

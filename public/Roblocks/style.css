@@ -1,0 +1,310 @@
+/* Create new file for chat styles */
+.chat-container {
+  position: fixed;
+  left: 10px;
+  top: 10px;
+  width: 300px;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 8px;
+  color: white;
+  font-family: 'Source Sans Pro', sans-serif;
+  z-index: 1000;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-sizing: border-box; /* Include padding and border in the element's total width and height */
+  display: flex; /* Use flexbox for layout */
+  flex-direction: column; /* Stack items vertically */
+}
+
+.chat-messages {
+  height: 200px; /* Default height, adjustable via settings */
+  overflow-y: auto;
+  padding: 10px;
+  font-size: 14px; /* Default size, adjustable */
+  flex-grow: 1; /* Allow messages area to grow */
+}
+
+.chat-input {
+  width: calc(100% - 20px); 
+  padding: 8px; /* Default padding, adjustable */
+  margin: 10px;
+  background: rgba(255, 255, 255, 0.1); /* Default bg, adjustable */
+  border: 1px solid rgba(255, 255, 255, 0.3); /* Default border, adjustable */
+  border-radius: 3px; /* Default radius, adjustable */
+  color: white; /* Default text color, adjustable */
+  font-size: 14px; /* Should match messages font size */
+  font-family: 'Source Sans Pro', sans-serif; /* Default font, adjustable */
+  box-sizing: border-box; /* Include padding and border */
+  flex-shrink: 0; /* Prevent input from shrinking */
+}
+
+.chat-input:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.5); /* Default focus border, adjustable */
+}
+
+.chat-message {
+  margin-bottom: 8px;
+  word-wrap: break-word;
+}
+
+.chat-username {
+  color: #4CAF50; /* Default username color, adjustable */
+  font-weight: bold; /* User requested bold chat, applying only to username for readability */
+}
+
+.system-message {
+  color: #FFA500; /* Default system color, adjustable */
+  font-style: italic;
+}
+
+.help-message {
+  color: #87CEEB; /* Default help color, adjustable */
+}
+
+/* Styles for settings toggle button */
+.chat-settings-toggle {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: none;
+  border: none;
+  color: white; /* Use white color for the gear icon */
+  font-size: 16px;
+  cursor: pointer;
+  z-index: 1001; /* Ensure it's above the settings panel */
+  padding: 0; /* Remove padding */
+  line-height: 1; /* Prevent extra spacing */
+}
+
+/* Styles for the settings panel itself */
+.chat-settings-panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8); /* Semi-transparent dark background */
+  padding: 20px;
+  box-sizing: border-box;
+  color: white;
+  font-family: 'Source Sans Pro', sans-serif;
+  font-size: 14px;
+  overflow-y: auto; /* Add scroll if settings overflow */
+  display: none; /* Hidden by default */
+}
+
+.chat-settings-panel label {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.chat-settings-panel input[type="range"],
+.chat-settings-panel input[type="color"],
+.chat-settings-panel input[type="text"] {
+  margin-left: 5px;
+  vertical-align: middle;
+}
+
+.chat-settings-panel input[type="text"] {
+  width: 150px; /* Wider input for font family */
+  padding: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  border-radius: 3px;
+}
+
+.settings-group {
+  margin-bottom: 15px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  padding-bottom: 10px;
+}
+
+.settings-group:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.chat-settings-panel h4 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 15px;
+  border-bottom: none; /* Remove redundant border */
+  padding-bottom: 0; /* Remove redundant padding */
+}
+
+.settings-save-area {
+  margin-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  padding-top: 10px;
+}
+
+#settings-string-output {
+  width: 100%;
+  height: 80px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  font-size: 12px;
+  padding: 5px;
+  box-sizing: border-box;
+  resize: vertical; /* Allow vertical resize */
+  margin-top: 5px;
+  font-family: monospace; /* Use monospace for settings string */
+}
+
+#generate-settings-string {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 5px 10px;
+  cursor: pointer;
+  border-radius: 3px;
+  margin-top: 5px;
+}
+
+#generate-settings-string:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Add these new admin panel styles */
+.admin-panel {
+  cursor: move;
+  user-select: none;
+  position: fixed;
+  left: 310px;
+  top: 10px;
+  width: 300px;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 8px;
+  color: white;
+  font-family: 'Source Sans Pro', sans-serif;
+  z-index: 1000;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-panel .control-group {
+  margin-bottom: 15px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 5px;
+}
+
+.admin-panel h4 {
+  margin: 5px 0;
+  color: #ff4444;
+}
+
+.admin-button {
+  background: #ff4444;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 3px;
+  cursor: pointer;
+  margin: 8px 0;
+  width: 100%;
+  transition: background-color 0.2s;
+}
+
+.admin-button:hover {
+  background: #ff6666;
+}
+
+.admin-panel input[type="color"] {
+  width: 50px;
+  height: 25px;
+  padding: 0;
+  margin: 5px;
+  border: none;
+  border-radius: 3px;
+}
+
+.admin-panel select {
+  width: 100%;
+  padding: 5px;
+  margin: 5px 0;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  border-radius: 3px;
+}
+
+.admin-panel label {
+  display: block;
+  margin: 5px 0;
+  color: white;
+}
+
+.admin-panel input[type="text"] {
+  width: 100%;
+  padding: 5px;
+  margin: 5px 0;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  border-radius: 3px;
+}
+
+.admin-panel input[type="text"]::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.admin-panel-handle {
+  padding: 10px;
+  background: rgba(255, 0, 0, 0.2);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.admin-panel-title {
+  color: #ff0000;
+  font-weight: bold;
+  font-size: 1.1em;
+  margin: 0;
+}
+
+.gamepad-guide {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 10px;
+    border-radius: 5px;
+    font-family: 'Source Sans Pro', sans-serif;
+    font-size: 12px;
+    pointer-events: none;
+}
+
+.system-message-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.system-message-controls input[type="text"] {
+    width: 100%;
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    border-radius: 3px;
+}
+
+#monster-controls label,
+#fly-controls label {
+    display: block;
+    margin: 5px 0;
+}
+
+#monster-controls input,
+#fly-controls input {
+    width: 100%;
+    margin: 5px 0;
+}
