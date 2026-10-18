@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
-import { io, Socket } from 'socket.io-client';
+import { ZobloxPeerSocket, watchZobloxLobbies, LobbyNumber } from './multiplayer';
 import { soundManager } from '../../utils/audio';
 import { launchConfetti } from '../../utils/confetti';
 import {
@@ -40,7 +40,7 @@ const DEFAULT_CUSTOMIZATION: PlayerCustomization = {
   trail: 'sparkles',
 };
 
-export const Zoblox: React.FC = () => {
+const ZobloxArena: React.FC<{ lobby: LobbyNumber; onLeave: () => void }> = ({ lobby, onLeave }) => {
   const mountRef = useRef<HTMLDivElement>(null);
   const [customization, setCustomization] = useState<PlayerCustomization>(() => {
     try {
@@ -54,8 +54,7 @@ export const Zoblox: React.FC = () => {
   const [showCustomizeModal, setShowCustomizeModal] = useState(false);
   const [chatInput, setChatInput] = useState('');
   const [chatMessages, setChatMessages] = useState<Array<{ sender: string; text: string }>>([
-    { sender: 'System', text: 'Welcome to Zoblox! Press 1-4 to change gears. Press C to customize!' },
-    { sender: 'Skoodge', text: 'Anyone wanna race the Obby?' },
+    { sender: 'System', text: 'Welcome to Zoblox! Press 1-4 for gears, C to customize. Have fun with real players!' },
   ]);
   const [activeGear, setActiveGear] = useState<'sword' | 'speed' | 'gravity' | 'trowel'>('sword');
   const [health, setHealth] = useState(100);
@@ -64,7 +63,7 @@ export const Zoblox: React.FC = () => {
   const [obbyStage, setObbyStage] = useState(0);
   const [isMusicPlaying, setIsMusicPlaying] = useState(true);
 
-  const socketRef = useRef<Socket | null>(null);
+  const socketRef = useRef<ZobloxPeerSocket | null>(null);
   const stateRef = useRef({
     customization,
     activeGear,
@@ -74,6 +73,12 @@ export const Zoblox: React.FC = () => {
 
   useEffect(() => {
     localStorage.setItem('zoblox_customization_v1', JSON.stringify(customization));
+    socketRef.current?.emit('player:customize', {
+      username: customization.username,
+      colors: { head: customization.headColor, torso: customization.torsoColor,
+        arms: customization.armsColor, legs: customization.legsColor },
+      accessory: customization.accessory,
+    });
   }, [customization]);
 
   useEffect(() => {
@@ -325,34 +330,8 @@ export const Zoblox: React.FC = () => {
     playerAvatar.root.position.set(0, 2.5, 10);
     scene.add(playerAvatar.root);
 
-    // --- BOT PLAYERS (MULTIPLAYER COMPANIONS) ---
-    const botData = [
-      { name: 'Tallest_Purple', color: '#8800ff', x: -10, z: 5, angle: 0 },
-      { name: 'NoobMaster2007', color: '#00ccff', x: 12, z: -10, angle: Math.PI },
-      { name: 'Waltuh_White', color: '#ffdd00', x: -15, z: -20, angle: Math.PI / 2 },
-    ];
-
-    const botAvatars = botData.map((b) => {
-      const botAv = buildCubeAvatar(
-        {
-          username: b.name,
-          headColor: '#f5cd30',
-          torsoColor: b.color,
-          armsColor: '#f5cd30',
-          legsColor: '#225588',
-          face: 'smile',
-          accessory: 'halo',
-          trail: 'none',
-        },
-        'halo'
-      );
-      botAv.root.position.set(b.x, 2.5, b.z);
-      scene.add(botAv.root);
-      return { ...botAv, data: b, vx: 0.1, vz: 0.1 };
-    });
-
     // --- REAL MULTIPLAYER SOCKET CONNECTION ---
-    const socket: Socket = io();
+    const socket = new ZobloxPeerSocket(lobby, stateRef.current.customization);
     socketRef.current = socket;
     const remotePlayers: Record<string, any> = {};
 
@@ -422,6 +401,45 @@ export const Zoblox: React.FC = () => {
       setChatMessages((prev) => [...prev.slice(-20), { sender: data.username, text: data.message }]);
     });
 
+    socket.on('player:customized', (p: any) => {
+      const previous = remotePlayers[p.id];
+      if (!previous) return;
+      const position = previous.root.position.clone();
+      const rotation = previous.root.rotation.y;
+      scene.remove(previous.root);
+      const updated = buildCubeAvatar({
+        username: p.username,
+        headColor: p.colors?.head || '#f5cd30',
+        torsoColor: p.colors?.torso || '#0055ff',
+        armsColor: p.colors?.arms || '#f5cd30',
+        legsColor: p.colors?.legs || '#a5bc50',
+        face: 'smile', accessory: p.accessory || 'none', trail: 'none',
+      }, p.accessory);
+      updated.root.position.copy(position);
+      updated.root.rotation.y = rotation;
+      scene.add(updated.root);
+      remotePlayers[p.id] = updated;
+    });
+
+    socket.on('player:damaged', (data: { health: number }) => {
+      setHealth(data.health);
+      soundManager.play('damage');
+    });
+    socket.on('player:respawned', () => {
+      playerAvatar.root.position.set(0, 3, 10);
+      setHealth(100);
+      setChatMessages(prev => [...prev.slice(-20),
+        { sender: 'PvP', text: 'You were knocked out! Respawned at the baseplate.' }]);
+    });
+    socket.on('player:ko', ({ username }: { username: string }) => {
+      setKos(k => k + 1);
+      setChatMessages(prev => [...prev.slice(-20),
+        { sender: 'PvP', text: 'You KO\'d ' + username + '!' }]);
+    });
+    socket.on('connection:error', (message: string) => {
+      setChatMessages(prev => [...prev.slice(-20), { sender: 'System', text: message }]);
+    });
+
     // --- CONTROLS & PHYSICS ---
     const keys: Record<string, boolean> = {};
     const playerPos = playerAvatar.root.position;
@@ -477,9 +495,10 @@ export const Zoblox: React.FC = () => {
       }
     };
 
-    document.addEventListener('pointerlockchange', () => {
+    const handlePointerLockChange = () => {
       isPointerLocked = document.pointerLockElement === renderer.domElement;
-    });
+    };
+    document.addEventListener('pointerlockchange', handlePointerLockChange);
 
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
@@ -492,16 +511,11 @@ export const Zoblox: React.FC = () => {
       slashTimer = 0.3;
       soundManager.play('click');
 
-      // Check hit against bots or players
-      botAvatars.forEach((bot) => {
-        if (bot.root.position.distanceTo(playerPos) < 4.5) {
+      // Only real peers in this lobby can be hit.
+      Object.entries(remotePlayers).forEach(([id, remote]: [string, any]) => {
+        if (remote.root.position.distanceTo(playerPos) < 4.5) {
+          socket.emit('player:hit', id);
           soundManager.play('damage');
-          setKos((k) => k + 1);
-          bot.root.position.set((Math.random() - 0.5) * 30, 2.5, (Math.random() - 0.5) * 30);
-          setChatMessages((prev) => [
-            ...prev,
-            { sender: 'PvP', text: `You KO'd ${bot.data.name} with your Linked Sword!` },
-          ]);
         }
       });
     }
@@ -510,8 +524,9 @@ export const Zoblox: React.FC = () => {
     let walkCycle = 0;
     let lastTime = performance.now();
 
+    let animationFrameId = 0;
     const animate = () => {
-      requestAnimationFrame(animate);
+      animationFrameId = requestAnimationFrame(animate);
       const now = performance.now();
       const dt = Math.min((now - lastTime) / 1000, 0.1);
       lastTime = now;
@@ -656,18 +671,6 @@ export const Zoblox: React.FC = () => {
       camera.position.copy(playerPos).add(camOffset);
       camera.lookAt(playerPos.x, playerPos.y + 1.2, playerPos.z);
 
-      // Bot Companions Wander
-      botAvatars.forEach((bot, idx) => {
-        bot.data.angle += dt * 0.4 * (idx % 2 === 0 ? 1 : -1);
-        bot.root.position.x += Math.cos(bot.data.angle) * 4 * dt;
-        bot.root.position.z += Math.sin(bot.data.angle) * 4 * dt;
-        bot.root.rotation.y = -bot.data.angle + Math.PI / 2;
-
-        const bSwing = Math.sin(now * 0.008 + idx) * 0.5;
-        bot.leftLeg.rotation.x = bSwing;
-        bot.rightLeg.rotation.x = -bSwing;
-      });
-
       // Send update to multiplayer server
       if (socket.connected) {
         socket.emit('player:update', {
@@ -692,18 +695,23 @@ export const Zoblox: React.FC = () => {
     window.addEventListener('resize', handleResize);
 
     return () => {
+      cancelAnimationFrame(animationFrameId);
       bgAudio.pause();
+      if (document.pointerLockElement === renderer.domElement) document.exitPointerLock();
+      document.removeEventListener('pointerlockchange', handlePointerLockChange);
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
       window.removeEventListener('mousedown', handleMouseDown);
       window.removeEventListener('mousemove', handleMouseMove);
       socket.disconnect();
+      socketRef.current = null;
+      renderer.dispose();
       if (renderer.domElement.parentNode) {
         renderer.domElement.parentNode.removeChild(renderer.domElement);
       }
     };
-  }, []);
+  }, [lobby]);
 
   const handleSendChat = (e: React.FormEvent) => {
     e.preventDefault();
@@ -747,7 +755,7 @@ export const Zoblox: React.FC = () => {
         }}
       >
         <div style={{ fontWeight: 'bold', fontSize: '16px', color: '#00ff88', marginBottom: '4px' }}>
-          ⚔️ ZOBLOX ARENA
+          ⚔️ ZOBLOX ARENA · LOBBY {lobby}
         </div>
         <div style={{ display: 'flex', gap: '16px' }}>
           <span>Player: <strong>{customization.username}</strong></span>
@@ -767,6 +775,14 @@ export const Zoblox: React.FC = () => {
           gap: '10px',
         }}
       >
+        <button
+          onClick={() => { soundManager.play('click'); onLeave(); }}
+          style={{
+            background: '#25252b', color: '#fff', border: '2px solid #00ff88',
+            borderRadius: '10px', padding: '10px 14px', fontWeight: 'bold',
+            cursor: 'pointer',
+          }}
+        >Leave Lobby</button>
         <button
           onClick={() => {
             soundManager.play('click');
@@ -1135,6 +1151,98 @@ export const Zoblox: React.FC = () => {
           </div>
         </div>
       )}
+    </div>
+  );
+};
+
+
+/** Shown before the Three.js scene loads; only real WebRTC peers count. */
+export const Zoblox: React.FC = () => {
+  const [lobby, setLobby] = useState<LobbyNumber | null>(null);
+  const [counts, setCounts] = useState<[number, number, number]>([0, 0, 0]);
+  const [networkError, setNetworkError] = useState('');
+  const directoryRef = useRef<ReturnType<typeof watchZobloxLobbies> | null>(null);
+
+  useEffect(() => {
+    directoryRef.current = watchZobloxLobbies(setCounts, setNetworkError);
+    return () => {
+      directoryRef.current?.close();
+      directoryRef.current = null;
+    };
+  }, []);
+
+  const join = (number: LobbyNumber) => {
+    directoryRef.current?.select(number);
+    setLobby(number);
+    soundManager.play('click');
+  };
+  const leave = () => {
+    directoryRef.current?.select(null);
+    setLobby(null);
+  };
+
+  if (lobby) return <ZobloxArena lobby={lobby} onLeave={leave} />;
+
+  const rooms: { id: LobbyNumber; name: string; hint: string }[] = [
+    { id: 1, name: 'CLASSIC', hint: 'The original baseplate' },
+    { id: 2, name: 'CHAOS', hint: 'A fresh world for mayhem' },
+    { id: 3, name: 'OBBY', hint: 'Race to the winner platform' },
+  ];
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: 'radial-gradient(circle at 50% 20%, #345c53, #151b20 70%)',
+      color: '#fff', zIndex: 50, overflowY: 'auto', display: 'flex', justifyContent: 'center',
+      alignItems: 'center', padding: '24px', fontFamily: "'Source Sans Pro', sans-serif"
+    }}>
+      <div style={{ width: '100%', maxWidth: '790px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+          <div style={{ fontSize: '12px', fontWeight: 800, letterSpacing: '5px', color: '#00ff88' }}>
+            ZORNHUB ARCADE
+          </div>
+          <h1 style={{ fontWeight: 1000, fontSize: 'clamp(40px, 7vw, 68px)', lineHeight: 1.15,
+            color: '#f4f4f4', margin: '8px 0', textShadow: '5px 5px #171717' }}>ZOBLOX</h1>
+          <p style={{ color: '#c2cdd0', margin: '8px 0 0' }}>
+            Choose a server and play with real people.
+          </p>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '14px' }}>
+          {rooms.map(room => (
+            <button
+              key={room.id}
+              type="button"
+              onClick={() => join(room.id)}
+              style={{ background: '#252b2c', border: '2px solid #4c5854', color: '#fff',
+                borderRadius: '12px', cursor: 'pointer', textAlign: 'left',
+                padding: '20px', boxShadow: '0 8px 0 #11191a', minHeight: '225px',
+                display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
+            >
+              <div>
+                <div style={{ color: '#00ff88', fontSize: '11px', fontWeight: 900, letterSpacing: '2px' }}>
+                  SERVER 0{room.id}
+                </div>
+                <h2 style={{ fontSize: '25px', margin: '14px 0 4px', fontWeight: 900 }}>{room.name}</h2>
+                <div style={{ fontSize: '13px', color: '#aeb9b7' }}>{room.hint}</div>
+              </div>
+              <div>
+                <div style={{ marginBottom: '12px', fontSize: '14px', fontWeight: 700 }}>
+                  <span style={{ display: 'inline-block', width: '9px', height: '9px',
+                    borderRadius: '50%', background: '#00ff88', marginRight: '8px' }} />
+                  {counts[room.id - 1]} {counts[room.id - 1] === 1 ? 'player' : 'players'} online
+                </div>
+                <div style={{ background: '#00ff88', color: '#06150b', borderRadius: '7px',
+                  padding: '10px', fontSize: '13px', fontWeight: 900, textAlign: 'center' }}>JOIN SERVER →</div>
+              </div>
+            </button>
+          ))}
+        </div>
+        {networkError && <p role="alert" style={{ color: '#ffaaaa', textAlign: 'center', marginTop: '24px' }}>
+          {networkError} Player counts may be unavailable.
+        </p>}
+        <p style={{ fontSize: '12px', color: '#94a19d', textAlign: 'center', marginTop: '30px' }}>
+          Player counts update as browsers connect. Lobbies share the same map, but their players are separate.
+          Peer connections use public signaling relays.
+        </p>
+      </div>
     </div>
   );
 };
