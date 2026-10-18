@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { createLegacyRoom } from './network.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
@@ -142,15 +143,8 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 // Ensure correct color space for renderer output
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 
-// Initialize multiplayer room after scene is created
-const room = {
-  clientId: 'localPlayer',
-  peers: { 'localPlayer': { username: 'hardcore' } },
-  onmessage: () => {},
-  subscribePresence: () => {},
-  updatePresence: () => {},
-  send: () => {}
-};
+// Multiplayer is initialized only after the user selects a real lobby.
+const room = createLegacyRoom(window.zobloxNetwork, window.zobloxLobby, window.zobloxName);
 
 const ADMIN_USERS = ['hardcore', 'websimbro', 'bastiancarcamo', 'yos', 'grey168', 'Dorian2007', 'jayy', 'uglybridge9252621', 'uglybridge', 'adjectivenounnumber', 'Lwebb2013', 'readystatue8153930']; 
 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -821,58 +815,15 @@ chatInput.addEventListener('keypress', async (event) => {
             return;
         }
 
-        const userIsAdmin = ADMIN_USERS.includes(room.peers[room.clientId]?.username);
-        const userIsOwner = room.peers[room.clientId]?.username === 'hardcore'; 
-
-        if (userIsAdmin || userIsOwner) { 
-            // Bypass filter for admins and owner
-            lastMessageTime = currentTime;
-            room.send({
-                type: 'chat',
-                message: message,
-                channel: currentChannel
-            });
-        } else {
-            // Regular users go through filter
-            try {
-                chatInput.disabled = true;
-                chatInput.placeholder = "Checking message...";
-                const completion = await websim.chat.completions.create({
-                    messages: [
-                        {
-                            role: "system",
-                            content: `Analyze the following message for inappropriate content (e.g., hate speech, harassment, explicit material, etc.). Respond directly with JSON, following this JSON schema, and no other text: { "isAppropriate": boolean; }`,
-                        },
-                        {
-                            role: "user",
-                            content: `The message is: "${message}"`,
-                        },
-                    ],
-                    json: true,
-                });
-
-                const result = JSON.parse(completion.content);
-                const isAppropriate = result.isAppropriate;
-
-                if (isAppropriate) {
-                     lastMessageTime = currentTime; // Update last message time only if sent
-                    room.send({
-                        type: 'chat',
-                        message: message,
-                        channel: currentChannel
-                    });
-                } else {
-                    addSystemMessage("Your message was blocked by the content filter.");
-                }
-
-            } catch (error) {
-                console.error("AI filter error:", error);
-                addSystemMessage("Failed to process message through content filter. Message blocked.");
-            } finally {
-                chatInput.disabled = false;
-                chatInput.placeholder = "Press Enter to chat...";
-            }
-        }
+        // Send to connected players. The old Websim AI filter is not
+        // available on Vercel and previously blocked every non-admin message.
+        // Cooldown and length bounds remain in effect.
+        lastMessageTime = currentTime;
+        room.send({
+            type: 'chat',
+            message: message.slice(0, 120),
+            channel: currentChannel
+        });
     }
 });
 
@@ -2727,4 +2678,10 @@ window.addEventListener('resize', () => {
     updateChatBubbles();
 });
 
+// Publish spawn immediately so stationary players are visible to new arrivals.
+room.updatePresence({
+    position: { x: character.position.x, y: character.position.y, z: character.position.z },
+    rotation: { _x: character.rotation.x, _y: character.rotation.y, _z: character.rotation.z },
+    isMoving: false, isJumping: false
+});
 animate();
